@@ -1,0 +1,221 @@
+/* static/styles.css */
+/* Based on the styling you shared (dark, premium, rounded, gradient). */
+:root {
+  --bg: #020617;
+  --bg-elevated: #020617;
+  --panel: #020617;
+  --panel-soft: #020617;
+  --border: rgba(148, 163, 184, 0.35);
+  --border-soft: rgba(148, 163, 184, 0.18);
+  --text-main: #f9fafb;
+  --text-muted: #9ca3af;
+  --accent-start: #22d3ee;
+  --accent-mid: #6366f1;
+  --accent-end: #f97316;
+}
+
+*,
+*::before,
+*::after { box-sizing: border-box; }
+
+body.app-body {
+  margin: 0;
+  font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  min-height: 100vh;
+  padding-bottom: 52px;
+  background:
+    radial-gradient(circle at top left, #0f172a 0, #020617 40%, #020617 100%),
+    radial-gradient(circle at bottom right, #1e293b 0, #020617 55%, #020617 100%);
+  color: var(--text-main);
+}
+
+.main-content {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 72px 20px 64px;
+}
+
+.topnav {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 28px;
+  backdrop-filter: blur(18px);
+  background: radial-gradient(circle at top left, #020617 0, rgba(2, 6, 23, 0.92) 40%, rgba(2, 6, 23, 0.9) 100%);
+  border-bottom: 1px solid rgba(30, 64, 175, 0.6);
+}
+
+.topnav-left { display:flex; align-items:center; gap:10px; }
+.brand { display:inline-flex; align-items:center; gap:10px; text-decoration:none; }
+.brand-mark {
+  width: 30px; height: 30px; border-radius: 999px;
+  background: conic-gradient(from 190deg, #22d3ee, #6366f1, #f97316, #22c55e, #22d3ee);
+  box-shadow: 0 0 0 1px rgba(15, 23, 42, 0.7), 0 0 32px rgba(96, 165, 250, 0.7);
+}
+.brand-text {
+  font-weight: 600; font-size: 15px; color: var(--text-main);
+  letter-spacing: 0.05em; text-transform: uppercase;
+}
+.topnav-right { display:flex; align-items:center; gap:20px; }
+.nav-link { font-size: 13px; color: var(--text-muted); text-decoration:none; }
+.nav-link:hover { color: var(--text-main); }
+
+.btn-pill {
+  font-size: 13px; padding: 8px 16px; border-radius: 999px; text-decoration:none;
+  background: radial-gradient(circle at 0 0, #22d3ee, #6366f1 45%, #f97316 100%);
+  color:white; box-shadow: 0 16px 40px rgba(37, 99, 235, 0.55);
+}
+
+.flash-container { margin: -24px 0 16px; }
+.flash-message {
+  border-radius: 999px; padding: 8px 12px; font-size: 12px;
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(248, 113, 113, 0.5);
+  color: #fecaca;
+}
+
+.page-header h1 { font-size: 26px; margin-bottom: 6px; }
+.page-header p { font-size: 14px; color: var(--text-muted); margin-bottom: 12px; }
+
+.panel {
+  border-radius: 24px;
+  padding: 18px 18px 16px;
+  background: radial-gradient(circle at 0 0, rgba(15, 23, 42, 0.96), rgba(15, 23, 42, 0.99));
+  border: 1px solid var(--border-soft);
+  box-shadow: 0 24px 80px rgba(15, 23, 42, 0.8);
+}
+
+.panel-header h2 { margin:0 0 4px; font-size:16px; }
+.panel-header p { margin:0; font-size:13px; color: var(--text-muted); }
+
+.upload-form {
+  border-radius: 22px;
+  padding: 18px 18px 16px;
+  background: radial-gradient(circle at 0 0, rgba(15, 23, 42, 0.9), rgba(15, 23, 42, 0.98));
+  border: 1px solid var(--border-soft);
+}
+
+.form-row { margin-bottom: 14px; }
+.form-row label { display:block; font-size:13px; font-weight:500; margin-bottom:6px; }
+
+/* ✅ IMPORTANT FIX:
+   Your form uses number inputs too, so we style them here. */
+input[type="file"],
+input[type="text"],
+input[type="number"],
+select {
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(148, 163, 184, 0.6);
+  background: rgba(15, 23, 42, 0.9);
+  color: var(--text-main);
+  font-size: 13px;
+  outline: none;
+}
+
+input[type="text"]::placeholder,
+input[type="number"]::placeholder {
+  color: rgba(156, 163, 175, 0.7);
+}
+
+input[type="text"]:focus,
+input[type="number"]:focus,
+input[type="file"]:focus,
+select:focus {
+  border-color: rgba(56, 189, 248, 0.9);
+  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.12);
+}
+
+.field-help { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+
+.form-actions { margin-top: 10px; display:flex; gap:10px; flex-wrap:wrap; }
+
+.btn-primary-sm,
+.btn-outline-sm {
+  border-radius: 999px;
+  font-size: 13px;
+  padding: 7px 14px;
+  cursor: pointer;
+  text-decoration: none;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+}
+
+.btn-primary-sm {
+  border: none;
+  background: radial-gradient(circle at 0 0, #22d3ee, #6366f1 45%, #f97316 100%);
+  color: white;
+}
+
+.btn-outline-sm {
+  border: 1px solid rgba(148, 163, 184, 0.7);
+  background: transparent;
+  color: var(--text-main);
+}
+
+.btn-outline-sm:hover {
+  border-color: rgba(148, 163, 184, 0.95);
+}
+
+/* Layout */
+.forecast-layout {
+  margin-top: 10px;
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+  gap: 18px;
+}
+
+/* ✅ Small helpers for the reserve study components UI */
+.table-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.table-scroll {
+  margin-top: 10px;
+  max-height: 420px;
+  border-radius: 16px;
+  border: 1px solid rgba(51, 65, 85, 0.9);
+  overflow: auto;
+}
+
+.forecast-table { width:100%; border-collapse:collapse; font-size:12px; }
+.forecast-table th, .forecast-table td { padding: 8px 10px; }
+.forecast-table thead th {
+  position: sticky; top:0; background:#020617;
+  border-bottom: 1px solid rgba(51, 65, 85, 1);
+  text-align:left; font-weight:500; color: var(--text-muted);
+}
+
+.value-cell { text-align:right; }
+.disclaimer-line { margin-top: 10px; font-size: 11px; color: var(--text-muted); }
+
+/* Sticky footer */
+.page-footer {
+  position: fixed;
+  bottom: 0; left: 0; width:100%;
+  background: rgba(2, 6, 23, 0.98);
+  border-top: 1px solid rgba(30, 64, 175, 0.6);
+  z-index: 25;
+}
+.page-footer-inner {
+  max-width: 1120px; margin: 0 auto;
+  padding: 10px 20px 12px;
+  display:flex; justify-content:space-between; align-items:center;
+  font-size: 12px; color: var(--text-muted);
+}
+.page-footer-inner a { color: var(--text-muted); text-decoration: underline; }
+.page-footer-inner a:hover { color: var(--text-main); }
+
+@media (max-width: 880px) {
+  .topnav { padding-inline: 16px; }
+  .forecast-layout { grid-template-columns: minmax(0,1fr); }
+  .page-footer-inner { flex-direction: column; align-items:flex-start; gap:4px; }
+}

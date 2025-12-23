@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>ReserveStudyTool · Reserve Study Report</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    {% block extra_head %}{% endblock %}
+  </head>
+  <body class="app-body">
+    <header class="topnav">
+      <div class="topnav-left">
+        <a href="{{ url_for('home') }}" class="brand">
+          <span class="brand-mark"></span>
+          <span class="brand-text">RESERVESTUDYTOOL</span>
+        </a>
+      </div>
+      <nav class="topnav-right">
+        <a class="nav-link" href="{{ url_for('home') }}">Properties</a>
+      </nav>
+    </header>
+
+    <main class="main-content">
+      {% with messages = get_flashed_messages() %}
+        {% if messages %}
+          <div class="flash-container">
+            {% for message in messages %}
+              <div class="flash-message">{{ message }}</div>
+            {% endfor %}
+          </div>
+        {% endif %}
+      {% endwith %}
+      {% block content %}{% endblock %}
+    </main>
+
+    <footer class="page-footer">
+      <div class="page-footer-inner">
+        <div class="footer-left">© ReserveStudyTool</div>
+        <div class="footer-right">
+          Contact support:
+          <a href="mailto:support@reservestudytool.com">support@reservestudytool.com</a>
+        </div>
+      </div>
+    </footer>
+  </body>
+</html>

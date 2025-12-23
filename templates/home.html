@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="page-header">
+  <h1>Reserve Study Tool</h1>
+  <p>Create a property, run a reserve study, download a report, and reuse prior data via cloning.</p>
+</section>
+
+<!-- Create property -->
+<div class="panel" style="margin-bottom: 18px;">
+  <div class="panel-header">
+    <h2>Create a property</h2>
+  </div>
+
+  <form class="upload-form" action="{{ url_for('create_property') }}" method="post" style="margin-top:12px;">
+    <div style="display:grid; grid-template-columns: 1fr; gap: 12px;">
+      <div class="form-row" style="margin-bottom:0;">
+        <label for="name">Property name (required)</label>
+        <input id="name" name="name" type="text" placeholder="Property name (required)" required />
+      </div>
+
+      <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+        <div class="form-row" style="margin-bottom:0;">
+          <label for="city">City</label>
+          <input id="city" name="city" type="text" placeholder="City" />
+        </div>
+
+        <div class="form-row" style="margin-bottom:0;">
+          <label for="state">State</label>
+          <input id="state" name="state" type="text" placeholder="State" />
+        </div>
+      </div>
+
+      <div class="form-row" style="margin-bottom:0;">
+        <label for="address">Address</label>
+        <input id="address" name="address" type="text" placeholder="Address" />
+      </div>
+    </div>
+
+    <div class="form-actions" style="margin-top: 14px;">
+      <button type="submit" class="btn-primary-sm">Create property</button>
+    </div>
+  </form>
+</div>
+
+<!-- Properties list -->
+<div class="panel">
+  <div class="panel-header">
+    <h2>Properties</h2>
+    <p>Open a property to view history and run new studies.</p>
+  </div>
+
+  <!-- Search bar -->
+  <div style="margin-top: 12px; display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+    <div style="flex: 1; min-width: 260px;">
+      <label for="property-search" style="display:block; font-size:13px; font-weight:500; margin-bottom:6px;">
+        Search properties
+      </label>
+      <input
+        id="property-search"
+        type="text"
+        placeholder="Type a company/property name…"
+        autocomplete="off"
+      />
+      <div class="field-help">Search matches name or location.</div>
+    </div>
+
+    <div style="font-size:12px; color: var(--text-muted); padding-top: 22px;">
+      <span id="match-count"></span>
+    </div>
+  </div>
+
+  <div class="table-scroll" style="margin-top: 12px;">
+    <table class="forecast-table" id="properties-table">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Location</th>
+          <th></th>
+        </tr>
+      </thead>
+
+      <tbody>
+        {% for p in properties %}
+          {% set loc_parts = [] %}
+          {% if p.city %}{% set _ = loc_parts.append(p.city) %}{% endif %}
+          {% if p.state %}{% set _ = loc_parts.append(p.state) %}{% endif %}
+          {% set location = loc_parts | join(", ") %}
+
+          <tr
+            class="js-property-row"
+            data-name="{{ (p.name or '') | lower }}"
+            data-location="{{ (location or '') | lower }}"
+          >
+            <td style="font-weight:600;">{{ p.name }}</td>
+            <td style="color: var(--text-muted);">
+              {{ location if location else "—" }}
+            </td>
+            <td class="value-cell">
+              <a class="btn-outline-sm" href="{{ url_for('property_page', property_id=p.id) }}">Open</a>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div id="no-results" class="disclaimer-line" style="display:none; margin-top: 12px;">
+    No properties match that search.
+  </div>
+</div>
+
+<script>
+  (function () {
+    const input = document.getElementById("property-search");
+    const rows = Array.from(document.querySelectorAll(".js-property-row"));
+    const countEl = document.getElementById("match-count");
+    const noResults = document.getElementById("no-results");
+
+    function update() {
+      const q = (input.value || "").trim().toLowerCase();
+      let shown = 0;
+
+      rows.forEach((row) => {
+        const name = row.getAttribute("data-name") || "";
+        const loc = row.getAttribute("data-location") || "";
+        const match = !q || name.includes(q) || loc.includes(q);
+        row.style.display = match ? "" : "none";
+        if (match) shown += 1;
+      });
+
+      countEl.textContent = rows.length
+        ? `${shown} of ${rows.length} shown`
+        : "";
+
+      noResults.style.display = (rows.length && shown === 0) ? "" : "none";
+    }
+
+    input.addEventListener("input", update);
+    update();
+  })();
+</script>
+{% endblock %}
+

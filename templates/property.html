@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="page-header">
+  <h1>{{ prop.name }}</h1>
+  <p>
+    {% if prop.city or prop.state %}
+      {{ prop.city or "" }}{% if prop.city and prop.state %}, {% endif %}{{ prop.state or "" }}
+    {% else %}
+      &nbsp;
+    {% endif %}
+  </p>
+</section>
+
+<!-- NEW: Navigation buttons -->
+<div class="form-actions" style="margin-bottom: 14px; display:flex; gap:10px; flex-wrap:wrap;">
+  <a href="{{ url_for('home') }}" class="btn-outline-sm">← Back to home</a>
+</div>
+
+<div class="panel">
+  <div class="panel-header" style="display:flex; align-items:flex-start; justify-content:space-between; gap:16px;">
+    <div>
+      <h2>Studies</h2>
+      <p>Run a new study, or clone an old one to reuse prior component data.</p>
+    </div>
+
+    <a class="btn-pill" href="{{ url_for('new_study', property_id=prop.id) }}">New study</a>
+  </div>
+
+  <div class="table-scroll" style="margin-top: 12px;">
+    <table class="forecast-table">
+      <thead>
+        <tr>
+          <th>Created</th>
+          <th>Start</th>
+          <th>Horizon</th>
+          <th class="value-cell"></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% if studies and studies|length > 0 %}
+          {% for s in studies %}
+          <tr>
+            <td>{{ s.created_at.strftime("%Y-%m-%d") }}</td>
+            <td>{{ s.start_year }}</td>
+            <td>{{ s.horizon_years }} years</td>
+            <td class="value-cell">
+              <a class="btn-outline-sm" href="{{ url_for('study_detail', study_id=s.id) }}" style="margin-right:8px;">View</a>
+              <a class="btn-outline-sm" href="{{ url_for('clone_study', study_id=s.id) }}">Clone</a>
+            </td>
+          </tr>
+          {% endfor %}
+        {% else %}
+          <tr>
+            <td colspan="4" style="color: var(--text-muted); padding: 14px 10px;">
+              No studies yet. Click “New study” to run one.
+            </td>
+          </tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+
