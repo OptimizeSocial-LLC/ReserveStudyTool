@@ -6,16 +6,50 @@
 
 <div class="panel" style="margin-bottom:18px;">
   <div class="panel-header">
+    <h2>Summary</h2>
+    <p>Full Funding output (FFB + % funded) with a levelized annual contribution recommendation.</p>
+  </div>
+
+  <div style="display:flex; flex-wrap:wrap; gap:14px; margin-top:12px;">
+    <div class="panel" style="padding:12px; min-width:220px;">
+      <div style="font-size:12px; color:var(--text-muted);">Recommended annual contribution</div>
+      <div style="font-size:22px; font-weight:700;">
+        {% if study.recommended_annual_contribution is not none %}
+          ${{ "{:,.0f}".format(study.recommended_annual_contribution) }}
+        {% else %}
+          —
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="panel" style="padding:12px; min-width:220px;">
+      <div style="font-size:12px; color:var(--text-muted);">Assumptions</div>
+      <div style="font-size:13px; margin-top:6px;">
+        Inflation: {{ "{:.2%}".format(study.inflation_rate) }}<br/>
+        Interest: {{ "{:.2%}".format(study.interest_rate) }}<br/>
+        Start balance: ${{ "{:,.0f}".format(study.starting_balance) }}
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="panel" style="margin-bottom:18px;">
+  <div class="panel-header">
     <h2>Actions</h2>
     <p>Download the report, edit inputs, or clone this study to reuse inputs next time.</p>
   </div>
 
-  <div class="form-actions" style="margin-top:12px;">
-    <a class="btn-outline-sm" href="{{ url_for('download_study_csv', study_id=study.id) }}">Download CSV report</a>
-    <a class="btn-outline-sm" href="{{ url_for('edit_study', study_id=study.id) }}">Edit inputs</a>
-    <a class="btn-outline-sm" href="{{ url_for('clone_study', study_id=study.id) }}">Clone this study</a>
-    <a class="btn-outline-sm" href="{{ url_for('property_page', property_id=study.property_id) }}">Back to property</a>
-    <a class="btn-outline-sm" href="{{ url_for('home') }}">Home</a>
+  <div class="form-actions" style="margin-top:12px; display:flex; flex-wrap:wrap; gap:10px; align-items:center;">
+    <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+      <a class="btn-primary-sm" href="{{ url_for('download_study_csv', study_id=study.id) }}">Download CSV</a>
+      <a class="btn-outline-sm" href="{{ url_for('edit_study', study_id=study.id) }}">Edit inputs</a>
+      <a class="btn-outline-sm" href="{{ url_for('clone_study', study_id=study.id) }}">Clone</a>
+    </div>
+    <div aria-hidden="true" style="height:26px; width:1px; background: rgba(255,255,255,0.12); margin: 0 6px;"></div>
+    <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+      <a class="btn-outline-sm" href="{{ url_for('property_page', property_id=study.property_id) }}">Back to property</a>
+      <a class="btn-outline-sm" href="{{ url_for('home') }}">Home</a>
+    </div>
   </div>
 </div>
 
@@ -23,7 +57,7 @@
   <div class="panel">
     <div class="panel-header">
       <h2>Components</h2>
-      <p>Stored inputs.</p>
+      <p>Stored inputs (including quantity and cycle).</p>
     </div>
 
     <div class="table-scroll">
@@ -31,8 +65,10 @@
         <thead>
           <tr>
             <th>Name</th>
-            <th>Useful</th>
-            <th>Remaining</th>
+            <th>Qty</th>
+            <th>UL</th>
+            <th>RL</th>
+            <th>Cycle</th>
             <th class="value-cell">Cost</th>
           </tr>
         </thead>
@@ -40,8 +76,10 @@
           {% for c in components %}
           <tr>
             <td>{{ c.name }}</td>
+            <td>{{ c.quantity }}</td>
             <td>{{ c.useful_life_years }}</td>
             <td>{{ c.remaining_life_years }}</td>
+            <td>{{ c.cycle_years if c.cycle_years else c.useful_life_years }}</td>
             <td class="value-cell">${{ "{:,.0f}".format(c.current_replacement_cost) }}</td>
           </tr>
           {% endfor %}
@@ -53,7 +91,7 @@
   <div class="panel">
     <div class="panel-header">
       <h2>Year-by-year results</h2>
-      <p>Stored outputs (so you can regenerate reports any time).</p>
+      <p>Includes Fully Funded Balance (FFB) and Percent Funded.</p>
     </div>
 
     <div class="table-scroll">
@@ -66,6 +104,8 @@
             <th class="value-cell">Expenses</th>
             <th class="value-cell">Interest</th>
             <th class="value-cell">End</th>
+            <th class="value-cell">FFB</th>
+            <th class="value-cell">% Funded</th>
           </tr>
         </thead>
         <tbody>
@@ -77,6 +117,8 @@
             <td class="value-cell">${{ "{:,.0f}".format(r.expenses) }}</td>
             <td class="value-cell">${{ "{:,.0f}".format(r.interest_earned) }}</td>
             <td class="value-cell">${{ "{:,.0f}".format(r.ending_balance) }}</td>
+            <td class="value-cell">${{ "{:,.0f}".format(r.fully_funded_balance) }}</td>
+            <td class="value-cell">{{ "{:.0%}".format(r.percent_funded) if r.fully_funded_balance > 0 else "—" }}</td>
           </tr>
           {% endfor %}
         </tbody>
@@ -84,11 +126,12 @@
     </div>
 
     <p class="disclaimer-line">
-      Placeholder model. Replace with your reserve-study methodology as needed.
+      Full Funding is computed using straight-line deterioration (Fully Funded Balance) and a levelized contribution that keeps balances at or above FFB over the horizon.
     </p>
   </div>
 </div>
 {% endblock %}
+
 
 
 
