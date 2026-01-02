@@ -626,9 +626,13 @@ def create_app():
     return app
 
 
+# Create the Flask app at import time so Gunicorn can find it
+app = create_app()
+
 if __name__ == "__main__":
-    app = create_app()
+    # Local dev only
     app.run(host="127.0.0.1", port=5050, debug=True)
+
 
 
 
