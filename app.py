@@ -2,6 +2,7 @@
 import os
 import io
 import csv
+import json
 from functools import wraps
 from datetime import datetime
 
@@ -14,6 +15,7 @@ from flask import (
     flash,
     send_file,
     session,
+    jsonify,
 )
 
 from models import db, Property, ReserveStudy, ReserveComponent, ReserveYearResult
@@ -21,6 +23,9 @@ from reserve_math import recommend_levelized_full_funding_contribution
 
 from dotenv import load_dotenv
 load_dotenv()
+
+# ✅ Your OpenAI vision helper (you said you already created this)
+from openai_vision import suggest_components_from_images
 
 
 def _sqlite_uri(app: Flask) -> str:
@@ -73,6 +78,9 @@ def create_app():
     # (Your .env uses SITE_USERNAME / SITE_PASSWORD)
     app.config["APP_USERNAME"] = os.getenv("SITE_USERNAME", "admin")
     app.config["APP_PASSWORD"] = os.getenv("SITE_PASSWORD", "change-me")
+
+    # Optional: for large uploads (you can tune)
+    # app.config["MAX_CONTENT_LENGTH"] = 20 * 1024 * 1024  # 20MB
 
     db.init_app(app)
 
@@ -537,6 +545,106 @@ def create_app():
             results=results,
             components=components,
         )
+
+    # ============================================================
+    # ✅ NEW: Photo -> component suggestions (NO STORAGE)
+    # ============================================================
+    ALLOWED_IMAGE_MIMES = {"image/jpeg", "image/png", "image/webp"}
+
+    @app.post("/studies/<int:study_id>/suggest-components")
+    @login_required
+    def suggest_components(study_id: int):
+        """
+        Accepts multipart/form-data with files field name: photos
+        Returns JSON suggestions from OpenAI vision.
+        Does NOT store images to disk or DB.
+        """
+        study = ReserveStudy.query.get_or_404(study_id)
+
+        files = request.files.getlist("photos")
+        if not files:
+            return jsonify({"ok": False, "error": "No files uploaded. Use field name 'photos'."}), 400
+
+        images_for_model = []
+        for idx, f in enumerate(files):
+            if not f or not f.filename:
+                continue
+
+            mime = (f.mimetype or "").lower()
+            if mime not in ALLOWED_IMAGE_MIMES:
+                return jsonify({"ok": False, "error": f"Unsupported file type: {mime}"}), 400
+
+            raw = f.read()
+            if not raw:
+                continue
+
+            images_for_model.append({"bytes": raw, "mime": mime, "label": f"Photo {idx+1}"})
+
+        if not images_for_model:
+            return jsonify({"ok": False, "error": "No valid images found in upload."}), 400
+
+        # Optional: pass light context to help the model
+        address_context = " ".join(
+            [x for x in [study.property.address, study.property.city, study.property.state] if x]
+        ).strip()
+        property_type_context = ""  # you can add later if you store it
+
+        try:
+            suggestions = suggest_components_from_images(
+                images_for_model,
+                address_context=address_context,
+                property_type_context=property_type_context,
+            )
+        except Exception as e:
+            return jsonify({"ok": False, "error": f"Vision analysis failed: {str(e)}"}), 500
+
+        return jsonify({"ok": True, "suggestions": suggestions})
+
+    @app.post("/studies/<int:study_id>/apply-suggested-components")
+    @login_required
+    def apply_suggested_components(study_id: int):
+        """
+        Accepts JSON: { "components": [ ... ] }
+        Inserts rows into ReserveComponent for this study.
+        """
+        study = ReserveStudy.query.get_or_404(study_id)
+
+        payload = request.get_json(force=True, silent=False) or {}
+        comps = payload.get("components", [])
+        if not isinstance(comps, list) or not comps:
+            return jsonify({"ok": False, "error": "No components provided."}), 400
+
+        created = 0
+        for c in comps:
+            try:
+                name = str(c.get("name", "")).strip()
+                if not name:
+                    continue
+
+                # Match YOUR schema + types
+                qty = int(c.get("quantity", 1) or 1)
+                ul = int(c.get("useful_life_years", 25) or 25)
+                rl = int(c.get("remaining_life_years", max(1, ul // 3)) or max(1, ul // 3))
+                cycle = int(c.get("cycle_years", ul) or ul)
+                cost = float(c.get("current_replacement_cost", 0) or 0)
+
+                db.session.add(
+                    ReserveComponent(
+                        study_id=study.id,
+                        name=name,
+                        quantity=max(1, qty),
+                        useful_life_years=max(1, ul),
+                        remaining_life_years=max(0, rl),
+                        cycle_years=max(1, cycle),
+                        current_replacement_cost=max(0.0, cost),
+                    )
+                )
+                created += 1
+            except Exception:
+                continue
+
+        db.session.commit()
+        return jsonify({"ok": True, "created": created})
 
     # --------------------
     # Download CSV

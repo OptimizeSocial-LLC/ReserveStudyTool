@@ -53,6 +53,161 @@
   </div>
 </div>
 
+<!-- ========================================================= -->
+<!-- ✅ NEW: Photo -> component suggestions (NO IMAGE STORAGE)   -->
+<!-- ========================================================= -->
+<div class="panel" style="margin-bottom:18px;">
+  <div class="panel-header">
+    <h2>Photo → component suggestions</h2>
+    <p>Upload site/building photos and get suggested components. Apply them, then click “Edit inputs” to review.</p>
+  </div>
+
+  <div style="margin-top:12px; display:flex; gap:12px; flex-wrap:wrap; align-items:center;">
+    <input id="photoUpload" type="file" accept="image/*" multiple />
+    <button class="btn-primary-sm" id="analyzeBtn" type="button">Analyze photos</button>
+    <div id="analyzeStatus" style="font-size:13px; color: var(--text-muted);"></div>
+  </div>
+
+  <div id="suggestionsWrap" style="margin-top:14px; display:none;">
+    <div style="display:flex; justify-content:space-between; gap:10px; align-items:center; flex-wrap:wrap;">
+      <div style="font-size:12px; color: var(--text-muted);">
+        Suggestions (uncheck anything you don’t want).
+      </div>
+      <button class="btn-outline-sm" id="applySuggestionsBtn" type="button">Apply suggestions</button>
+    </div>
+
+    <div class="table-scroll" style="margin-top:10px;">
+      <table class="forecast-table" id="suggestionsTable">
+        <thead>
+          <tr>
+            <th>Use?</th>
+            <th>Name</th>
+            <th class="value-cell">Cost</th>
+            <th>Qty</th>
+            <th>UL</th>
+            <th>RL</th>
+            <th>Cycle</th>
+            <th>Conf</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <div id="suggestionNotes" style="margin-top:10px; font-size:13px; color: var(--text-muted);"></div>
+  </div>
+</div>
+
+<script>
+(function () {
+  const studyId = {{ study.id }};
+  const upload = document.getElementById("photoUpload");
+  const analyzeBtn = document.getElementById("analyzeBtn");
+  const statusEl = document.getElementById("analyzeStatus");
+  const wrap = document.getElementById("suggestionsWrap");
+  const tbody = document.querySelector("#suggestionsTable tbody");
+  const applyBtn = document.getElementById("applySuggestionsBtn");
+  const notesEl = document.getElementById("suggestionNotes");
+
+  let latestComponents = [];
+
+  function money(n) {
+    try { return "$" + Number(n || 0).toLocaleString(); } catch { return "$0"; }
+  }
+
+  analyzeBtn.addEventListener("click", async () => {
+    const files = upload.files;
+    if (!files || !files.length) {
+      statusEl.textContent = "Pick one or more photos first.";
+      return;
+    }
+
+    statusEl.textContent = "Analyzing photos…";
+    analyzeBtn.disabled = true;
+
+    const fd = new FormData();
+    for (const f of files) fd.append("photos", f);
+
+    try {
+      const res = await fetch(`/studies/${studyId}/suggest-components`, { method: "POST", body: fd });
+      const data = await res.json();
+      if (!data.ok) throw new Error(data.error || "Unknown error");
+
+      const suggestions = data.suggestions || {};
+      latestComponents = (suggestions.components || []).map((c) => ({ ...c, __use: true }));
+
+      tbody.innerHTML = "";
+      for (let i = 0; i < latestComponents.length; i++) {
+        const c = latestComponents[i];
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td><input type="checkbox" data-i="${i}" ${c.__use ? "checked" : ""} /></td>
+          <td>${(c.name || "").toString()}</td>
+          <td class="value-cell">${money(c.current_replacement_cost)}</td>
+          <td>${c.quantity ?? 1}</td>
+          <td>${c.useful_life_years ?? ""}</td>
+          <td>${c.remaining_life_years ?? ""}</td>
+          <td>${c.cycle_years ?? ""}</td>
+          <td>${Math.round((c.confidence || 0) * 100)}%</td>
+        `;
+        tbody.appendChild(tr);
+      }
+
+      tbody.querySelectorAll("input[type='checkbox']").forEach((cb) => {
+        cb.addEventListener("change", (e) => {
+          const idx = Number(e.target.getAttribute("data-i"));
+          latestComponents[idx].__use = e.target.checked;
+        });
+      });
+
+      const notes = [];
+      if (suggestions.notes) notes.push(`Notes: ${suggestions.notes}`);
+      if (suggestions.missing_info_questions?.length) {
+        notes.push("Questions: " + suggestions.missing_info_questions.join(" • "));
+      }
+      notesEl.textContent = notes.join("  |  ");
+
+      wrap.style.display = "block";
+      statusEl.textContent = `Done. Found ${latestComponents.length} suggestion(s).`;
+    } catch (err) {
+      statusEl.textContent = `Error: ${err.message || err}`;
+    } finally {
+      analyzeBtn.disabled = false;
+    }
+  });
+
+  applyBtn.addEventListener("click", async () => {
+    const selected = latestComponents
+      .filter((c) => c.__use)
+      .map(({ __use, ...rest }) => rest);
+
+    if (!selected.length) {
+      statusEl.textContent = "Nothing selected to apply.";
+      return;
+    }
+
+    statusEl.textContent = "Applying suggestions…";
+    applyBtn.disabled = true;
+
+    try {
+      const res = await fetch(`/studies/${studyId}/apply-suggested-components`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ components: selected })
+      });
+      const data = await res.json();
+      if (!data.ok) throw new Error(data.error || "Unknown error");
+
+      statusEl.textContent = `Applied ${data.created} component(s). Refresh to see them in the Components list, or click “Edit inputs” to review.`;
+    } catch (err) {
+      statusEl.textContent = `Error: ${err.message || err}`;
+    } finally {
+      applyBtn.disabled = false;
+    }
+  });
+})();
+</script>
+
 <div class="forecast-layout">
   <div class="panel">
     <div class="panel-header">
