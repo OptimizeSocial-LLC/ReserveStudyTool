@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="page-header">
+  <h1>Create account</h1>
+  <p>Make your own login.</p>
+</section>
+
+<div class="panel" style="max-width:560px;">
+  <form class="upload-form" method="post" action="{{ url_for('signup_post') }}" autocomplete="off">
+    <!-- Autofill “trap” fields (helps in Chrome) -->
+    <input type="text" name="fakeusernameremembered" style="display:none" autocomplete="username" />
+    <input type="password" name="fakepasswordremembered" style="display:none" autocomplete="current-password" />
+
+    <div class="form-row">
+      <label for="email">Email</label>
+      <input
+        id="email"
+        name="email"
+        type="email"
+        autocomplete="off"
+        autocapitalize="none"
+        spellcheck="false"
+        required
+      />
+    </div>
+
+    <div class="form-row">
+      <label for="password">Password</label>
+      <input
+        id="password"
+        name="password"
+        type="password"
+        autocomplete="new-password"
+        required
+      />
+    </div>
+
+    <div class="form-row">
+      <label for="password2">Confirm password</label>
+      <input
+        id="password2"
+        name="password2"
+        type="password"
+        autocomplete="new-password"
+        required
+      />
+    </div>
+
+    <div class="form-actions" style="margin-top:14px; display:flex; gap:14px; align-items:center;">
+      <button type="submit" class="btn-primary-sm">Create account</button>
+      <div class="muted">
+        Already have an account? <a href="{{ url_for('login') }}">Log in</a>
+      </div>
+    </div>
+  </form>
+</div>
+{% endblock %}
+
+
+

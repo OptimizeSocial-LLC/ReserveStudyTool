@@ -10,6 +10,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
     {% block extra_head %}{% endblock %}
   </head>
+
   <body class="app-body">
     <header class="topnav">
       <div class="topnav-left">
@@ -18,9 +19,15 @@
           <span class="brand-text">RESERVESTUDYTOOL</span>
         </a>
       </div>
+
       <nav class="topnav-right">
-        <a class="nav-link" href="{{ url_for('home') }}">Properties</a>
-        <a class="nav-link" href="{{ url_for('logout') }}">Logout</a>
+        {% if session.get("user_id") %}
+          <a class="nav-link" href="{{ url_for('home') }}">Properties</a>
+          <a class="nav-link" href="{{ url_for('logout') }}">Logout</a>
+        {% else %}
+          <a class="nav-link" href="{{ url_for('login') }}">Login</a>
+          <a class="nav-link" href="{{ url_for('signup') }}">Sign up</a>
+        {% endif %}
       </nav>
     </header>
 
@@ -34,6 +41,7 @@
           </div>
         {% endif %}
       {% endwith %}
+
       {% block content %}{% endblock %}
     </main>
 
@@ -48,3 +56,9 @@
     </footer>
   </body>
 </html>
+
+
+
+
+
+

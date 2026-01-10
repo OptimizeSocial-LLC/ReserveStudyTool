@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="page-header">
+  <h1>Switching accounts</h1>
+  <p>You’re being signed out now so you can create a new account.</p>
+</section>
+
+<div class="panel" style="max-width:520px;">
+  <form method="post" action="{{ url_for('switch_account_post') }}">
+    <button type="submit" class="btn-primary-sm">Continue</button>
+  </form>
+</div>
+
+<script>
+  // Auto-continue after a tiny beat
+  setTimeout(() => {
+    fetch("{{ url_for('switch_account_post') }}", { method: "POST" })
+      .then(() => window.location.href = "{{ url_for('signup') }}");
+  }, 600);
+</script>
+{% endblock %}

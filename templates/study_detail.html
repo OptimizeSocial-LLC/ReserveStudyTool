@@ -1,8 +1,49 @@
+{# templates/study_detail.html #}
 {% extends "base.html" %}
 {% block content %}
+
+{# ------------------------------------------------------------------
+   IMPORTANT: Drafts should never render this page.
+   If a draft hits this template for any reason, redirect to edit.
+   ------------------------------------------------------------------ #}
+{% if not study.is_paid %}
+  <script>
+    window.location.replace("{{ url_for('edit_study', study_id=study.id) }}");
+  </script>
+  <noscript>
+    <div class="panel">
+      <div class="panel-header">
+        <h2>Draft study</h2>
+        <p>This study is still a draft. Redirecting you to edit…</p>
+      </div>
+      <div class="form-actions" style="margin-top:12px;">
+        <a class="btn-primary-sm" href="{{ url_for('edit_study', study_id=study.id) }}">Go to Edit</a>
+      </div>
+    </div>
+  </noscript>
+{% else %}
+
 <section class="page-header">
-  <h1>{{ study.property.name }} — Study completed on {{ study.created_at.strftime("%Y-%m-%d") }}</h1>
+  <h1>{{ study.property.name }} — Study created on {{ study.created_at.strftime("%Y-%m-%d") }}</h1>
+  <div style="margin-top:6px; color: var(--text-muted);">
+    Status:
+    <strong>Paid (Locked)</strong>
+  </div>
 </section>
+
+<div class="panel" style="margin-bottom:18px;">
+  <div class="panel-header">
+    <h2>Actions</h2>
+    <p>This study has been paid and is locked for editing.</p>
+  </div>
+
+  <div class="form-actions" style="margin-top:12px; display:flex; gap:10px; flex-wrap:wrap;">
+    <a class="btn-outline-sm" href="{{ url_for('study_detail', study_id=study.id) }}">View (locked)</a>
+    <a class="btn-outline-sm" href="{{ url_for('clone_study', study_id=study.id) }}">Clone</a>
+    <a class="btn-outline-sm" href="{{ url_for('property_page', property_id=study.property_id) }}">Back to property</a>
+    <a class="btn-outline-sm" href="{{ url_for('home') }}">Home</a>
+  </div>
+</div>
 
 <div class="panel" style="margin-bottom:18px;">
   <div class="panel-header">
@@ -22,201 +63,25 @@
       </div>
     </div>
 
-    <div class="panel" style="padding:12px; min-width:220px;">
-      <div style="font-size:12px; color:var(--text-muted);">Assumptions</div>
-      <div style="font-size:13px; margin-top:6px;">
-        Inflation: {{ "{:.2%}".format(study.inflation_rate) }}<br/>
-        Interest: {{ "{:.2%}".format(study.interest_rate) }}<br/>
-        Start balance: ${{ "{:,.0f}".format(study.starting_balance) }}
-      </div>
+    <div class="panel" style="padding:12px; min-width:260px;">
+      <div style="font-size:12px; color:var(--text-muted); margin-bottom:6px;">Assumptions</div>
+      <div>Inflation: {{ "{:.2%}".format(study.inflation_rate) }}</div>
+      <div>Interest: {{ "{:.2%}".format(study.interest_rate) }}</div>
+      <div>Start balance: ${{ "{:,.0f}".format(study.starting_balance) }}</div>
+      <div>Min balance: ${{ "{:,.0f}".format(study.min_balance) }}</div>
     </div>
   </div>
 </div>
 
-<div class="panel" style="margin-bottom:18px;">
-  <div class="panel-header">
-    <h2>Actions</h2>
-    <p>Download the report, edit inputs, or clone this study to reuse inputs next time.</p>
-  </div>
-
-  <div class="form-actions" style="margin-top:12px; display:flex; flex-wrap:wrap; gap:10px; align-items:center;">
-    <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
-      <a class="btn-primary-sm" href="{{ url_for('download_study_csv', study_id=study.id) }}">Download CSV</a>
-      <a class="btn-outline-sm" href="{{ url_for('edit_study', study_id=study.id) }}">Edit inputs</a>
-      <a class="btn-outline-sm" href="{{ url_for('clone_study', study_id=study.id) }}">Clone</a>
-    </div>
-    <div aria-hidden="true" style="height:26px; width:1px; background: rgba(255,255,255,0.12); margin: 0 6px;"></div>
-    <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
-      <a class="btn-outline-sm" href="{{ url_for('property_page', property_id=study.property_id) }}">Back to property</a>
-      <a class="btn-outline-sm" href="{{ url_for('home') }}">Home</a>
-    </div>
-  </div>
-</div>
-
-<!-- ========================================================= -->
-<!-- ✅ NEW: Photo -> component suggestions (NO IMAGE STORAGE)   -->
-<!-- ========================================================= -->
-<div class="panel" style="margin-bottom:18px;">
-  <div class="panel-header">
-    <h2>Photo → component suggestions</h2>
-    <p>Upload site/building photos and get suggested components. Apply them, then click “Edit inputs” to review.</p>
-  </div>
-
-  <div style="margin-top:12px; display:flex; gap:12px; flex-wrap:wrap; align-items:center;">
-    <input id="photoUpload" type="file" accept="image/*" multiple />
-    <button class="btn-primary-sm" id="analyzeBtn" type="button">Analyze photos</button>
-    <div id="analyzeStatus" style="font-size:13px; color: var(--text-muted);"></div>
-  </div>
-
-  <div id="suggestionsWrap" style="margin-top:14px; display:none;">
-    <div style="display:flex; justify-content:space-between; gap:10px; align-items:center; flex-wrap:wrap;">
-      <div style="font-size:12px; color: var(--text-muted);">
-        Suggestions (uncheck anything you don’t want).
-      </div>
-      <button class="btn-outline-sm" id="applySuggestionsBtn" type="button">Apply suggestions</button>
-    </div>
-
-    <div class="table-scroll" style="margin-top:10px;">
-      <table class="forecast-table" id="suggestionsTable">
-        <thead>
-          <tr>
-            <th>Use?</th>
-            <th>Name</th>
-            <th class="value-cell">Cost</th>
-            <th>Qty</th>
-            <th>UL</th>
-            <th>RL</th>
-            <th>Cycle</th>
-            <th>Conf</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
-    </div>
-
-    <div id="suggestionNotes" style="margin-top:10px; font-size:13px; color: var(--text-muted);"></div>
-  </div>
-</div>
-
-<script>
-(function () {
-  const studyId = {{ study.id }};
-  const upload = document.getElementById("photoUpload");
-  const analyzeBtn = document.getElementById("analyzeBtn");
-  const statusEl = document.getElementById("analyzeStatus");
-  const wrap = document.getElementById("suggestionsWrap");
-  const tbody = document.querySelector("#suggestionsTable tbody");
-  const applyBtn = document.getElementById("applySuggestionsBtn");
-  const notesEl = document.getElementById("suggestionNotes");
-
-  let latestComponents = [];
-
-  function money(n) {
-    try { return "$" + Number(n || 0).toLocaleString(); } catch { return "$0"; }
-  }
-
-  analyzeBtn.addEventListener("click", async () => {
-    const files = upload.files;
-    if (!files || !files.length) {
-      statusEl.textContent = "Pick one or more photos first.";
-      return;
-    }
-
-    statusEl.textContent = "Analyzing photos…";
-    analyzeBtn.disabled = true;
-
-    const fd = new FormData();
-    for (const f of files) fd.append("photos", f);
-
-    try {
-      const res = await fetch(`/studies/${studyId}/suggest-components`, { method: "POST", body: fd });
-      const data = await res.json();
-      if (!data.ok) throw new Error(data.error || "Unknown error");
-
-      const suggestions = data.suggestions || {};
-      latestComponents = (suggestions.components || []).map((c) => ({ ...c, __use: true }));
-
-      tbody.innerHTML = "";
-      for (let i = 0; i < latestComponents.length; i++) {
-        const c = latestComponents[i];
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td><input type="checkbox" data-i="${i}" ${c.__use ? "checked" : ""} /></td>
-          <td>${(c.name || "").toString()}</td>
-          <td class="value-cell">${money(c.current_replacement_cost)}</td>
-          <td>${c.quantity ?? 1}</td>
-          <td>${c.useful_life_years ?? ""}</td>
-          <td>${c.remaining_life_years ?? ""}</td>
-          <td>${c.cycle_years ?? ""}</td>
-          <td>${Math.round((c.confidence || 0) * 100)}%</td>
-        `;
-        tbody.appendChild(tr);
-      }
-
-      tbody.querySelectorAll("input[type='checkbox']").forEach((cb) => {
-        cb.addEventListener("change", (e) => {
-          const idx = Number(e.target.getAttribute("data-i"));
-          latestComponents[idx].__use = e.target.checked;
-        });
-      });
-
-      const notes = [];
-      if (suggestions.notes) notes.push(`Notes: ${suggestions.notes}`);
-      if (suggestions.missing_info_questions?.length) {
-        notes.push("Questions: " + suggestions.missing_info_questions.join(" • "));
-      }
-      notesEl.textContent = notes.join("  |  ");
-
-      wrap.style.display = "block";
-      statusEl.textContent = `Done. Found ${latestComponents.length} suggestion(s).`;
-    } catch (err) {
-      statusEl.textContent = `Error: ${err.message || err}`;
-    } finally {
-      analyzeBtn.disabled = false;
-    }
-  });
-
-  applyBtn.addEventListener("click", async () => {
-    const selected = latestComponents
-      .filter((c) => c.__use)
-      .map(({ __use, ...rest }) => rest);
-
-    if (!selected.length) {
-      statusEl.textContent = "Nothing selected to apply.";
-      return;
-    }
-
-    statusEl.textContent = "Applying suggestions…";
-    applyBtn.disabled = true;
-
-    try {
-      const res = await fetch(`/studies/${studyId}/apply-suggested-components`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ components: selected })
-      });
-      const data = await res.json();
-      if (!data.ok) throw new Error(data.error || "Unknown error");
-
-      statusEl.textContent = `Applied ${data.created} component(s). Refresh to see them in the Components list, or click “Edit inputs” to review.`;
-    } catch (err) {
-      statusEl.textContent = `Error: ${err.message || err}`;
-    } finally {
-      applyBtn.disabled = false;
-    }
-  });
-})();
-</script>
-
-<div class="forecast-layout">
+<div style="display:grid; grid-template-columns: 1fr 1fr; gap:14px;">
   <div class="panel">
     <div class="panel-header">
       <h2>Components</h2>
       <p>Stored inputs (including quantity and cycle).</p>
     </div>
 
-    <div class="table-scroll">
-      <table class="forecast-table">
+    <div style="overflow:auto;">
+      <table class="table" style="width:100%; margin-top:10px;">
         <thead>
           <tr>
             <th>Name</th>
@@ -224,19 +89,19 @@
             <th>UL</th>
             <th>RL</th>
             <th>Cycle</th>
-            <th class="value-cell">Cost</th>
+            <th style="text-align:right;">Cost</th>
           </tr>
         </thead>
         <tbody>
           {% for c in components %}
-          <tr>
-            <td>{{ c.name }}</td>
-            <td>{{ c.quantity }}</td>
-            <td>{{ c.useful_life_years }}</td>
-            <td>{{ c.remaining_life_years }}</td>
-            <td>{{ c.cycle_years if c.cycle_years else c.useful_life_years }}</td>
-            <td class="value-cell">${{ "{:,.0f}".format(c.current_replacement_cost) }}</td>
-          </tr>
+            <tr>
+              <td>{{ c.name }}</td>
+              <td>{{ c.quantity }}</td>
+              <td>{{ c.useful_life_years }}</td>
+              <td>{{ c.remaining_life_years }}</td>
+              <td>{{ c.cycle_years }}</td>
+              <td style="text-align:right;">${{ "{:,.0f}".format(c.current_replacement_cost) }}</td>
+            </tr>
           {% endfor %}
         </tbody>
       </table>
@@ -249,43 +114,50 @@
       <p>Includes Fully Funded Balance (FFB) and Percent Funded.</p>
     </div>
 
-    <div class="table-scroll">
-      <table class="forecast-table">
-        <thead>
-          <tr>
-            <th>Year</th>
-            <th class="value-cell">Start</th>
-            <th class="value-cell">Contrib</th>
-            <th class="value-cell">Expenses</th>
-            <th class="value-cell">Interest</th>
-            <th class="value-cell">End</th>
-            <th class="value-cell">FFB</th>
-            <th class="value-cell">% Funded</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for r in results %}
-          <tr>
-            <td>{{ r.year }}</td>
-            <td class="value-cell">${{ "{:,.0f}".format(r.starting_balance) }}</td>
-            <td class="value-cell">${{ "{:,.0f}".format(r.contributions) }}</td>
-            <td class="value-cell">${{ "{:,.0f}".format(r.expenses) }}</td>
-            <td class="value-cell">${{ "{:,.0f}".format(r.interest_earned) }}</td>
-            <td class="value-cell">${{ "{:,.0f}".format(r.ending_balance) }}</td>
-            <td class="value-cell">${{ "{:,.0f}".format(r.fully_funded_balance) }}</td>
-            <td class="value-cell">{{ "{:.0%}".format(r.percent_funded) if r.fully_funded_balance > 0 else "—" }}</td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-
-    <p class="disclaimer-line">
-      Full Funding is computed using straight-line deterioration (Fully Funded Balance) and a levelized contribution that keeps balances at or above FFB over the horizon.
-    </p>
+    {% if not results %}
+      <div style="margin-top:10px; color:var(--text-muted);">
+        No results found. (This usually means the study wasn’t run correctly during checkout.)
+      </div>
+    {% else %}
+      <div style="overflow:auto;">
+        <table class="table" style="width:100%; margin-top:10px;">
+          <thead>
+            <tr>
+              <th>Year</th>
+              <th>Start</th>
+              <th>Contrib</th>
+              <th>Expenses</th>
+              <th>Interest</th>
+              <th>End</th>
+              <th>FFB</th>
+              <th>% Funded</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for r in results %}
+              <tr>
+                <td>{{ r.year }}</td>
+                <td>${{ "{:,.0f}".format(r.starting_balance) }}</td>
+                <td>${{ "{:,.0f}".format(r.contributions) }}</td>
+                <td>${{ "{:,.0f}".format(r.expenses) }}</td>
+                <td>${{ "{:,.0f}".format(r.interest_earned) }}</td>
+                <td>${{ "{:,.0f}".format(r.ending_balance) }}</td>
+                <td>${{ "{:,.0f}".format(r.fully_funded_balance) }}</td>
+                <td>{{ "{:.1%}".format(r.percent_funded) }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% endif %}
   </div>
 </div>
+
+{% endif %}
 {% endblock %}
+
+
+
 
 
 

@@ -2,28 +2,66 @@
 {% block content %}
 <section class="page-header">
   <h1>Login</h1>
-  <p>This site is private.</p>
+  <p>Sign in to access your properties and studies.</p>
 </section>
 
 <div class="panel" style="max-width:520px;">
-  <form class="upload-form" method="post" action="{{ url_for('login_post') }}">
-    <!-- IMPORTANT: preserve next redirect -->
+  <form class="upload-form" method="post" action="{{ url_for('login_post') }}" autocomplete="off">
     <input type="hidden" name="next_url" value="{{ next_url }}" />
 
+    {# Browser autofill killers #}
+    <input type="text" name="fake_user" style="display:none" autocomplete="username" />
+    <input type="password" name="fake_pass" style="display:none" autocomplete="new-password" />
+
     <div class="form-row">
-      <label for="username">Username</label>
-      <input id="username" name="username" autocomplete="username" required />
+      <label for="username">Email</label>
+      <input
+        id="username"
+        name="username"
+        type="email"
+        autocomplete="off"
+        autocapitalize="none"
+        spellcheck="false"
+        required
+        value=""
+      />
     </div>
 
     <div class="form-row">
       <label for="password">Password</label>
-      <input id="password" name="password" type="password" autocomplete="current-password" required />
+      <input
+        id="password"
+        name="password"
+        type="password"
+        autocomplete="off"
+        required
+        value=""
+      />
     </div>
 
-    <div class="form-actions" style="margin-top:14px;">
+    <div class="form-actions" style="margin-top:14px; display:flex; gap:12px; align-items:center;">
       <button type="submit" class="btn-primary-sm">Log in</button>
+      <div style="opacity:.8;">
+        Don’t have an account?
+        <a href="{{ url_for('signup') }}">Create one</a>
+      </div>
     </div>
   </form>
 </div>
+
+<script>
+  // Extra: clear fields on load (helps even if Chrome tries to be "helpful")
+  window.addEventListener("load", () => {
+    const u = document.getElementById("username");
+    const p = document.getElementById("password");
+    if (u) u.value = "";
+    if (p) p.value = "";
+  });
+</script>
 {% endblock %}
+
+
+
+
+
 

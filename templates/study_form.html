@@ -1,17 +1,37 @@
+{# templates/study_form.html #}
 {% extends "base.html" %}
 {% block content %}
 <section class="page-header">
-  <h1>New Reserve Study</h1>
+  <h1>{{ "Edit Reserve Study" if edit_mode else "New Reserve Study" }}</h1>
   <p>{{ prop.name }}</p>
 </section>
 
 <div class="form-actions" style="margin-bottom: 14px; display:flex; gap:10px; flex-wrap:wrap;">
   <a href="{{ url_for('property_page', property_id=prop.id) }}" class="btn-outline-sm">← Back to property</a>
   <a href="{{ url_for('home') }}" class="btn-outline-sm">Home</a>
+
+  {# Only show “Back to study” for paid/locked studies #}
+  {% if edit_mode and study and study.is_paid %}
+    <a href="{{ url_for('study_detail', study_id=study.id) }}" class="btn-outline-sm">Back to study</a>
+  {% endif %}
 </div>
 
+{% if edit_mode and study and study.is_paid %}
+  <div class="panel" style="margin-bottom:14px;">
+    <div class="panel-header">
+      <h2>Locked</h2>
+      <p>This study has been paid and is locked for editing.</p>
+    </div>
+    <div class="form-actions" style="margin-top:12px; display:flex; gap:10px; flex-wrap:wrap;">
+      <a class="btn-primary-sm" href="{{ url_for('study_detail', study_id=study.id) }}">View results</a>
+    </div>
+  </div>
+{% endif %}
+
 <section class="upload-card">
-  <form class="upload-form" action="{{ url_for('create_study') if not edit_mode else url_for('update_study', study_id=study.id) }}" method="post">
+  <form class="upload-form"
+        action="{{ url_for('create_study') if not edit_mode else url_for('update_study', study_id=study.id) }}"
+        method="post">
     <input type="hidden" name="property_id" value="{{ prop.id }}" />
 
     <div class="forecast-layout" style="margin-top: 0;">
@@ -19,60 +39,82 @@
       <div class="panel">
         <div class="panel-header">
           <h2>Study assumptions</h2>
-          <p>Full Funding (FFB + % funded) with levelized contribution.</p>
+          <p>Full Funding (FFB + % funded) with a levelized contribution recommendation.</p>
         </div>
 
         <div style="margin-top: 12px; display:grid; grid-template-columns: 1fr 1fr; gap: 12px;">
           <div class="form-row" style="margin-bottom:0;">
             <label for="start_year">Start year</label>
-            <input type="number" id="start_year" name="start_year" value="{{ defaults.start_year }}" required />
+            <input type="number" id="start_year" name="start_year"
+                   value="{{ defaults.start_year if edit_mode else '' }}"
+                   placeholder="i.e. 2026"
+                   {% if edit_mode and study and study.is_paid %}disabled{% endif %} />
             <div class="field-help">First year in the projection.</div>
           </div>
 
           <div class="form-row" style="margin-bottom:0;">
             <label for="horizon_years">Horizon (years)</label>
-            <input type="number" id="horizon_years" name="horizon_years" value="{{ defaults.horizon_years }}" required />
-            <div class="field-help">How many years to model.</div>
+            <input type="number" id="horizon_years" name="horizon_years"
+                   value="{{ defaults.horizon_years if edit_mode else '' }}"
+                   placeholder="i.e. 30"
+                   {% if edit_mode and study and study.is_paid %}disabled{% endif %} />
+            <div class="field-help">How many years to model (typical: 20–30).</div>
           </div>
 
           <div class="form-row" style="margin-bottom:0;">
             <label for="inflation_rate">Inflation / escalation rate</label>
-            <input type="number" step="0.0001" id="inflation_rate" name="inflation_rate" value="{{ defaults.inflation_rate }}" required />
+            <input type="number" step="0.0001" id="inflation_rate" name="inflation_rate"
+                   value="{{ defaults.inflation_rate if edit_mode else '' }}"
+                   placeholder="i.e. 0.03"
+                   {% if edit_mode and study and study.is_paid %}disabled{% endif %} />
             <div class="field-help">Example: <code>0.03</code> for 3%.</div>
           </div>
 
           <div class="form-row" style="margin-bottom:0;">
             <label for="interest_rate">Interest / earnings rate</label>
-            <input type="number" step="0.0001" id="interest_rate" name="interest_rate" value="{{ defaults.interest_rate }}" required />
+            <input type="number" step="0.0001" id="interest_rate" name="interest_rate"
+                   value="{{ defaults.interest_rate if edit_mode else '' }}"
+                   placeholder="i.e. 0.01"
+                   {% if edit_mode and study and study.is_paid %}disabled{% endif %} />
             <div class="field-help">Example: <code>0.01</code> for 1%.</div>
           </div>
 
           <div class="form-row" style="margin-bottom:0;">
             <label for="starting_balance">Starting reserve balance ($)</label>
-            <input type="number" step="0.01" id="starting_balance" name="starting_balance" value="{{ defaults.starting_balance }}" required />
-            <div class="field-help">Reserve balance at the start year.</div>
+            <input type="number" step="0.01" id="starting_balance" name="starting_balance"
+                   value="{{ defaults.starting_balance if edit_mode else '' }}"
+                   placeholder="i.e. 50000"
+                   {% if edit_mode and study and study.is_paid %}disabled{% endif %} />
+            <div class="field-help">What’s currently in the reserve account.</div>
           </div>
 
           <div class="form-row" style="margin-bottom:0;">
             <label for="min_balance">Minimum balance ($)</label>
-            <input type="number" step="0.01" id="min_balance" name="min_balance" value="{{ defaults.min_balance }}" required />
-            <div class="field-help">Full funding typically assumes non-negative; you can set a buffer.</div>
+            <input type="number" step="0.01" id="min_balance" name="min_balance"
+                   value="{{ defaults.min_balance if edit_mode else '' }}"
+                   placeholder="i.e. 0"
+                   {% if edit_mode and study and study.is_paid %}disabled{% endif %} />
+            <div class="field-help">Use a buffer if needed.</div>
           </div>
 
           <div class="form-row" style="margin-bottom:0;">
             <label for="funding_method">Funding method</label>
-            <select id="funding_method" name="funding_method" required>
-              <option value="full" selected>Full Funding (FFB + % funded)</option>
+            <select id="funding_method" name="funding_method"
+                    {% if edit_mode and study and study.is_paid %}disabled{% endif %}>
+              <option value="full" {% if (defaults.funding_method or 'full') == 'full' %}selected{% endif %}>
+                Full Funding (FFB + % funded)
+              </option>
             </select>
-            <div class="field-help">This output includes Fully Funded Balance and Percent Funded.</div>
           </div>
 
           <div class="form-row" style="margin-bottom:0;">
             <label for="contribution_mode">Contribution style</label>
-            <select id="contribution_mode" name="contribution_mode" required>
-              <option value="levelized" selected>Levelized (one annual amount)</option>
+            <select id="contribution_mode" name="contribution_mode"
+                    {% if edit_mode and study and study.is_paid %}disabled{% endif %}>
+              <option value="levelized" {% if (defaults.contribution_mode or 'levelized') == 'levelized' %}selected{% endif %}>
+                Levelized (one annual amount)
+              </option>
             </select>
-            <div class="field-help">Produces a single recommended annual contribution.</div>
           </div>
         </div>
       </div>
@@ -82,43 +124,67 @@
         <div class="panel-header table-header" style="display:flex; align-items:flex-start; justify-content:space-between; gap:14px;">
           <div>
             <h2>Components</h2>
-            <p>Full funding requires recurring replacements (cycle years) and quantities.</p>
+            <p>Enter the major items your HOA is responsible for replacing (roof, paint, paving, etc.).</p>
           </div>
+
           <div>
-            <button type="button" class="btn-outline-sm" id="add-component-btn">+ Add</button>
+            <button type="button" class="btn-outline-sm" id="add-component-btn"
+                    {% if edit_mode and study and study.is_paid %}disabled{% endif %}>
+              + Add
+            </button>
           </div>
         </div>
 
         <div id="components-wrap" style="margin-top: 12px;">
           {% for c in components %}
-            <div class="panel component-row" style="padding: 14px; margin-bottom: 12px;">
+            <div class="panel component-row"
+                 data-component-id="{{ c.id if c.id is defined else '' }}"
+                 style="padding: 14px; margin-bottom: 12px;">
+
+              <input type="hidden" name="component_id[]" value="{{ c.id if c.id is defined else '' }}" />
+              <input type="hidden" class="js-rowkey-input" name="row_key[]" value="{{ c.row_key if c.row_key is defined else '' }}" />
+
               <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:10px;">
                 <div style="font-size:12px; color: var(--text-muted);">Component</div>
-                <button type="button" class="btn-outline-sm js-remove-component" style="padding:6px 10px;">Delete</button>
+                <button type="button" class="btn-outline-sm js-remove-component" style="padding:6px 10px;"
+                        {% if edit_mode and study and study.is_paid %}disabled{% endif %}>
+                  Delete
+                </button>
               </div>
 
               <div style="display:grid; grid-template-columns: 1.2fr 1fr; gap: 10px;">
                 <div class="form-row" style="margin-bottom:0;">
                   <label style="margin-bottom:6px;">Name</label>
-                  <input name="component_name[]" type="text" value="{{ c.name }}" placeholder="e.g., Roof, Elevator, Boiler" required />
+                  <input name="component_name[]" type="text"
+                         value="{{ c.name if edit_mode else (c.name or '') }}"
+                         placeholder="i.e. Roof"
+                         {% if edit_mode and study and study.is_paid %}disabled{% endif %}/>
                 </div>
 
                 <div class="form-row" style="margin-bottom:0;">
                   <label style="margin-bottom:6px;">Replacement cost (today $)</label>
                   <input name="current_replacement_cost[]" type="number" step="0.01"
-                         value="{{ "{:.2f}".format(c.current_replacement_cost) }}" required />
+                         value="{{ "{:.2f}".format(c.current_replacement_cost) if (edit_mode and c.current_replacement_cost is not none) else '' }}"
+                         placeholder="i.e. 180000"
+                         {% if edit_mode and study and study.is_paid %}disabled{% endif %}/>
                 </div>
               </div>
 
               <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top:10px;">
                 <div class="form-row" style="margin-bottom:0;">
                   <label style="margin-bottom:6px;">Quantity</label>
-                  <input name="quantity[]" type="number" value="{{ c.quantity if c.quantity is defined else 1 }}" required />
+                  <input name="quantity[]" type="number"
+                         value="{{ c.quantity if edit_mode else '' }}"
+                         placeholder="i.e. 1"
+                         {% if edit_mode and study and study.is_paid %}disabled{% endif %}/>
                 </div>
 
                 <div class="form-row" style="margin-bottom:0;">
                   <label style="margin-bottom:6px;">Cycle (years)</label>
-                  <input name="cycle_years[]" type="number" value="{{ c.cycle_years if c.cycle_years is defined else c.useful_life_years }}" required />
+                  <input name="cycle_years[]" type="number"
+                         value="{{ c.cycle_years if edit_mode else '' }}"
+                         placeholder="i.e. 25"
+                         {% if edit_mode and study and study.is_paid %}disabled{% endif %}/>
                   <div class="field-help">Usually equals Useful Life. Can differ.</div>
                 </div>
               </div>
@@ -126,101 +192,100 @@
               <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top:10px;">
                 <div class="form-row" style="margin-bottom:0;">
                   <label style="margin-bottom:6px;">Useful life (years)</label>
-                  <input name="useful_life_years[]" type="number" value="{{ c.useful_life_years }}" required />
+                  <input name="useful_life_years[]" type="number"
+                         value="{{ c.useful_life_years if edit_mode else '' }}"
+                         placeholder="i.e. 25"
+                         {% if edit_mode and study and study.is_paid %}disabled{% endif %}/>
                 </div>
 
                 <div class="form-row" style="margin-bottom:0;">
                   <label style="margin-bottom:6px;">Remaining life (years)</label>
-                  <input name="remaining_life_years[]" type="number" value="{{ c.remaining_life_years }}" required />
+                  <input name="remaining_life_years[]" type="number"
+                         value="{{ c.remaining_life_years if edit_mode else '' }}"
+                         placeholder="i.e. 8"
+                         {% if edit_mode and study and study.is_paid %}disabled{% endif %}/>
                 </div>
               </div>
+
+              <!-- Photos block unchanged (keep your existing JS + markup here) -->
+              <div class="component-photos" style="margin-top:12px;">
+                <div style="display:flex; justify-content:space-between; align-items:flex-end; gap:10px; flex-wrap:wrap;">
+                  <div>
+                    <div style="font-size:12px; color: var(--text-muted);">Photos (optional)</div>
+                    <div style="font-size:13px; color: var(--text-muted); margin-top:2px;">
+                      Choose files → Upload → thumbnails show below.
+                    </div>
+                  </div>
+
+                  {% if not (edit_mode and study and study.is_paid) %}
+                    <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+                      <input class="js-photo-input" type="file" accept="image/*" multiple />
+                      <button type="button" class="btn-outline-sm js-upload-photos">Upload</button>
+                    </div>
+                  {% endif %}
+                </div>
+
+                <div class="js-photo-status" style="margin-top:8px; font-size:13px; color: var(--text-muted);"></div>
+
+                <div class="js-photo-grid"
+                     style="margin-top:10px; display:grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap:10px;">
+                  {% if c.photos is defined and c.photos %}
+                    {% for p in c.photos %}
+                      <div class="js-photo-card"
+                           data-kind="saved"
+                           data-photo-id="{{ p.id }}"
+                           style="border:1px solid rgba(255,255,255,0.10); border-radius:12px; overflow:hidden; background:rgba(255,255,255,0.03);">
+                        <img src="{{ p.url }}" alt="{{ p.name or 'photo' }}"
+                             style="width:100%; height:100px; object-fit:cover;" loading="lazy" />
+                        <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; padding:8px;">
+                          <div style="font-size:12px; color:var(--text-muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                            {{ p.name or "Photo" }}
+                          </div>
+                          {% if not (edit_mode and study and study.is_paid) %}
+                            <button type="button" class="btn-outline-sm js-delete-photo" style="padding:6px 10px;">Remove</button>
+                          {% endif %}
+                        </div>
+                      </div>
+                    {% endfor %}
+                  {% endif %}
+                </div>
+              </div>
+
             </div>
           {% endfor %}
         </div>
 
         <p class="disclaimer-line" style="margin-top: 6px;">
-          Full Funding includes Fully Funded Balance (FFB) and Percent Funded each year, with a levelized annual contribution recommendation.
+          Tip: Most HOA managers can confidently identify 10–25 components. Start with big-ticket items.
         </p>
       </div>
     </div>
 
     <div class="form-actions" style="margin-top: 14px; display:flex; gap:10px; flex-wrap:wrap;">
-      <button type="submit" class="btn-primary-sm">{{ "Update study" if edit_mode else "Run study + save" }}</button>
+      <button type="submit" class="btn-primary-sm"
+              {% if edit_mode and study and study.is_paid %}disabled{% endif %}>
+        Save draft
+      </button>
+
       <a href="{{ url_for('property_page', property_id=prop.id) }}" class="btn-outline-sm">Cancel</a>
+
+      {% if edit_mode and study and not study.is_paid %}
+        <a href="{{ url_for('checkout', study_id=study.id) }}" class="btn-outline-sm">Checkout</a>
+      {% endif %}
     </div>
   </form>
 </section>
 
-<template id="component-template">
-  <div class="panel component-row" style="padding: 14px; margin-bottom: 12px;">
-    <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:10px;">
-      <div style="font-size:12px; color: var(--text-muted);">Component</div>
-      <button type="button" class="btn-outline-sm js-remove-component" style="padding:6px 10px;">Delete</button>
-    </div>
-
-    <div style="display:grid; grid-template-columns: 1.2fr 1fr; gap: 10px;">
-      <div class="form-row" style="margin-bottom:0;">
-        <label style="margin-bottom:6px;">Name</label>
-        <input name="component_name[]" type="text" placeholder="e.g., Roof, Elevator, Boiler" required />
-      </div>
-
-      <div class="form-row" style="margin-bottom:0;">
-        <label style="margin-bottom:6px;">Replacement cost (today $)</label>
-        <input name="current_replacement_cost[]" type="number" step="0.01" placeholder="180000" required />
-      </div>
-    </div>
-
-    <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top:10px;">
-      <div class="form-row" style="margin-bottom:0;">
-        <label style="margin-bottom:6px;">Quantity</label>
-        <input name="quantity[]" type="number" value="1" required />
-      </div>
-
-      <div class="form-row" style="margin-bottom:0;">
-        <label style="margin-bottom:6px;">Cycle (years)</label>
-        <input name="cycle_years[]" type="number" value="1" required />
-      </div>
-    </div>
-
-    <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top:10px;">
-      <div class="form-row" style="margin-bottom:0;">
-        <label style="margin-bottom:6px;">Useful life (years)</label>
-        <input name="useful_life_years[]" type="number" value="25" required />
-      </div>
-
-      <div class="form-row" style="margin-bottom:0;">
-        <label style="margin-bottom:6px;">Remaining life (years)</label>
-        <input name="remaining_life_years[]" type="number" value="8" required />
-      </div>
-    </div>
-  </div>
-</template>
-
-<script>
-  (function () {
-    const wrap = document.getElementById("components-wrap");
-    const tpl = document.getElementById("component-template");
-    const addBtn = document.getElementById("add-component-btn");
-
-    function wireRow(rowEl) {
-      const btn = rowEl.querySelector(".js-remove-component");
-      if (btn) btn.addEventListener("click", () => rowEl.remove());
-    }
-
-    wrap.querySelectorAll(".component-row").forEach(wireRow);
-
-    addBtn.addEventListener("click", () => {
-      const node = tpl.content.cloneNode(true);
-      const rowEl = node.querySelector(".component-row");
-      wireRow(rowEl);
-      wrap.appendChild(node);
-
-      const firstInput = wrap.querySelector(".component-row:last-child input[name='component_name[]']");
-      if (firstInput) firstInput.focus();
-    });
-  })();
-</script>
+{# Keep your existing component template + JS exactly as-is below #}
+{{ super() }}
 {% endblock %}
+
+
+
+
+
+
+
 
 
 

@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="page-header">
+  <h1>Checkout</h1>
+  <p>{{ study.property.name }}</p>
+</section>
+
+<div class="panel" style="margin-bottom:18px;">
+  <div class="panel-header">
+    <h2>Reserve Study Payment</h2>
+    <p>This is a simulated checkout for now. Price: <strong>${{ "{:,.0f}".format(price_cents/100) }}</strong></p>
+  </div>
+
+  <div style="margin-top:12px; font-size:13px; color:var(--text-muted);">
+    Once paid, the study runs and becomes locked (no edits).
+  </div>
+
+  <div class="form-actions" style="margin-top:14px; display:flex; gap:10px; flex-wrap:wrap;">
+    <form method="post" action="{{ url_for('checkout_simulate_success', study_id=study.id) }}">
+      <button class="btn-primary-sm" type="submit">Simulate payment ($2000)</button>
+    </form>
+    <a class="btn-outline-sm" href="{{ url_for('edit_study', study_id=study.id) }}">Back</a>
+  </div>
+</div>
+{% endblock %}
+
