@@ -160,7 +160,10 @@ def create_app():
     app = Flask(__name__)
     app.secret_key = os.getenv("SECRET_KEY", "dev-secret-change-me")
 
-    app.config["SQLALCHEMY_DATABASE_URI"] = _db_uri()
+    app.config["SQLALCHEMY_DATABASE_URI"] = _db_uri().replace(
+        "postgresql://", "postgresql+psycopg://", 1
+        )
+
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
     # Cookie hardening (Render is HTTPS)
