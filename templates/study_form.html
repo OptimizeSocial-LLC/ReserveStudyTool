@@ -207,20 +207,19 @@
                 </div>
               </div>
 
-              <!-- Photos block unchanged (keep your existing JS + markup here) -->
+              <!-- Photos (AUTO-UPLOAD on choose) -->
               <div class="component-photos" style="margin-top:12px;">
                 <div style="display:flex; justify-content:space-between; align-items:flex-end; gap:10px; flex-wrap:wrap;">
                   <div>
                     <div style="font-size:12px; color: var(--text-muted);">Photos (optional)</div>
                     <div style="font-size:13px; color: var(--text-muted); margin-top:2px;">
-                      Choose files → Upload → thumbnails show below.
+                      Choose files → upload automatically → thumbnails show below.
                     </div>
                   </div>
 
                   {% if not (edit_mode and study and study.is_paid) %}
                     <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
                       <input class="js-photo-input" type="file" accept="image/*" multiple />
-                      <button type="button" class="btn-outline-sm js-upload-photos">Upload</button>
                     </div>
                   {% endif %}
                 </div>
@@ -276,9 +275,219 @@
   </form>
 </section>
 
-{# Keep your existing component template + JS exactly as-is below #}
+<script>
+(function () {
+  const isLocked = {{ "true" if (edit_mode and study and study.is_paid) else "false" }};
+  if (isLocked) return;
+
+  function uuidRowKey() {
+    // stable-enough row key for temp photo grouping
+    return "rk_" + Math.random().toString(16).slice(2) + "_" + Date.now().toString(16);
+  }
+
+  function qs(el, sel) { return el.querySelector(sel); }
+  function qsa(el, sel) { return Array.from(el.querySelectorAll(sel)); }
+
+  function setStatus(rowEl, msg) {
+    const s = qs(rowEl, ".js-photo-status");
+    if (s) s.textContent = msg || "";
+  }
+
+  function renderPhotoGrid(rowEl, photos, kind) {
+    const grid = qs(rowEl, ".js-photo-grid");
+    if (!grid) return;
+    grid.innerHTML = "";
+
+    (photos || []).forEach(p => {
+      const card = document.createElement("div");
+      card.className = "js-photo-card";
+      card.dataset.kind = kind;
+      card.dataset.photoId = p.id;
+
+      card.style.border = "1px solid rgba(255,255,255,0.10)";
+      card.style.borderRadius = "12px";
+      card.style.overflow = "hidden";
+      card.style.background = "rgba(255,255,255,0.03)";
+
+      const img = document.createElement("img");
+      img.src = p.url;
+      img.alt = p.name || "photo";
+      img.loading = "lazy";
+      img.style.width = "100%";
+      img.style.height = "100px";
+      img.style.objectFit = "cover";
+
+      const footer = document.createElement("div");
+      footer.style.display = "flex";
+      footer.style.justifyContent = "space-between";
+      footer.style.alignItems = "center";
+      footer.style.gap = "8px";
+      footer.style.padding = "8px";
+
+      const name = document.createElement("div");
+      name.textContent = p.name || "Photo";
+      name.style.fontSize = "12px";
+      name.style.color = "var(--text-muted)";
+      name.style.whiteSpace = "nowrap";
+      name.style.overflow = "hidden";
+      name.style.textOverflow = "ellipsis";
+
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "btn-outline-sm js-delete-photo";
+      btn.textContent = "Remove";
+      btn.style.padding = "6px 10px";
+
+      footer.appendChild(name);
+      footer.appendChild(btn);
+
+      card.appendChild(img);
+      card.appendChild(footer);
+      grid.appendChild(card);
+    });
+  }
+
+  async function fetchJson(url, opts) {
+    const res = await fetch(url, opts || {});
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      const msg = (data && (data.error || data.message)) || ("Request failed: " + res.status);
+      throw new Error(msg);
+    }
+    return data;
+  }
+
+  async function refreshPhotos(rowEl) {
+    const componentId = (rowEl.dataset.componentId || "").trim();
+    const propId = (document.querySelector('input[name="property_id"]')?.value || "").trim();
+    const rowKeyInput = qs(rowEl, ".js-rowkey-input");
+    const rowKey = (rowKeyInput?.value || "").trim();
+
+    if (componentId) {
+      const data = await fetchJson(`/components/${componentId}/photos`);
+      renderPhotoGrid(rowEl, data.photos || [], "saved");
+      return;
+    }
+
+    if (propId && rowKey) {
+      const data = await fetchJson(`/temp/component-photos?property_id=${encodeURIComponent(propId)}&row_key=${encodeURIComponent(rowKey)}`);
+      renderPhotoGrid(rowEl, data.photos || [], "temp");
+      return;
+    }
+
+    renderPhotoGrid(rowEl, [], "temp");
+  }
+
+  async function uploadFilesForRow(rowEl, fileList) {
+    const files = Array.from(fileList || []);
+    if (!files.length) return;
+
+    const componentId = (rowEl.dataset.componentId || "").trim();
+    const propId = (document.querySelector('input[name="property_id"]')?.value || "").trim();
+    const rowKeyInput = qs(rowEl, ".js-rowkey-input");
+
+    if (!componentId) {
+      // temp upload requires row_key
+      if (rowKeyInput && !rowKeyInput.value.trim()) {
+        rowKeyInput.value = uuidRowKey();
+      }
+    }
+
+    setStatus(rowEl, "Uploading…");
+
+    if (componentId) {
+      const fd = new FormData();
+      files.forEach(f => fd.append("photos", f));
+
+      await fetchJson(`/components/${componentId}/photos`, {
+        method: "POST",
+        body: fd
+      });
+
+      await refreshPhotos(rowEl);
+      setStatus(rowEl, "Uploaded.");
+      setTimeout(() => setStatus(rowEl, ""), 1200);
+      return;
+    }
+
+    // temp
+    if (!propId) throw new Error("Missing property_id");
+    const rowKey = (rowKeyInput?.value || "").trim();
+    if (!rowKey) throw new Error("Missing row_key");
+
+    const fd = new FormData();
+    fd.append("property_id", propId);
+    fd.append("row_key", rowKey);
+    files.forEach(f => fd.append("photos", f));
+
+    await fetchJson(`/temp/component-photo`, {
+      method: "POST",
+      body: fd
+    });
+
+    await refreshPhotos(rowEl);
+    setStatus(rowEl, "Uploaded.");
+    setTimeout(() => setStatus(rowEl, ""), 1200);
+  }
+
+  // AUTO-UPLOAD on choose
+  document.addEventListener("change", async (e) => {
+    const input = e.target;
+    if (!(input instanceof HTMLInputElement)) return;
+    if (!input.classList.contains("js-photo-input")) return;
+
+    const rowEl = input.closest(".component-row");
+    if (!rowEl) return;
+
+    try {
+      await uploadFilesForRow(rowEl, input.files);
+      input.value = ""; // reset so choosing same file again still triggers change
+    } catch (err) {
+      setStatus(rowEl, (err && err.message) ? err.message : "Upload failed.");
+      input.value = "";
+    }
+  });
+
+  // Delete photo (temp or saved)
+  document.addEventListener("click", async (e) => {
+    const btn = e.target;
+    if (!(btn instanceof HTMLElement)) return;
+    if (!btn.classList.contains("js-delete-photo")) return;
+
+    const card = btn.closest(".js-photo-card");
+    const rowEl = btn.closest(".component-row");
+    if (!card || !rowEl) return;
+
+    const kind = card.dataset.kind;
+    const photoId = card.dataset.photoId;
+    if (!photoId) return;
+
+    try {
+      setStatus(rowEl, "Removing…");
+      if (kind === "saved") {
+        await fetchJson(`/components/photos/${photoId}`, { method: "DELETE" });
+      } else {
+        await fetchJson(`/temp/component-photo/${photoId}`, { method: "DELETE" });
+      }
+      await refreshPhotos(rowEl);
+      setStatus(rowEl, "");
+    } catch (err) {
+      setStatus(rowEl, (err && err.message) ? err.message : "Remove failed.");
+    }
+  });
+
+  // Initial refresh for each component row (so temp photos load on edit/new)
+  window.addEventListener("load", () => {
+    qsa(document, ".component-row").forEach(rowEl => {
+      refreshPhotos(rowEl).catch(() => {});
+    });
+  });
+})();
+</script>
+
 {{ super() }}
 {% endblock %}
+
 
 
 

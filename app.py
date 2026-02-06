@@ -52,12 +52,10 @@ def _db_uri() -> str:
 
 
 def _storage_provider() -> str:
-    # Keep flexible: could be "s3", "gcs", "azure", etc.
     return (os.getenv("STORAGE_PROVIDER") or "s3").strip()
 
 
 def _storage_bucket() -> str:
-    # You MUST set this if your DB schema requires storage_bucket NOT NULL
     b = (os.getenv("STORAGE_BUCKET") or "").strip()
     if not b:
         raise RuntimeError("STORAGE_BUCKET is not set (required for photo rows).")
@@ -65,10 +63,6 @@ def _storage_bucket() -> str:
 
 
 def _safe_model_kwargs(model_cls, data: Dict[str, Any]) -> Dict[str, Any]:
-    """
-    Only pass kwargs that exist as attributes on the SQLAlchemy model class.
-    Prevents crashes if one model has a column and another doesn't.
-    """
     out = {}
     for k, v in data.items():
         if hasattr(model_cls, k):
@@ -162,8 +156,7 @@ def create_app():
 
     app.config["SQLALCHEMY_DATABASE_URI"] = _db_uri().replace(
         "postgresql://", "postgresql+psycopg://", 1
-        )
-
+    )
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
     # Cookie hardening (Render is HTTPS)
@@ -190,6 +183,16 @@ def create_app():
         resp.headers["Pragma"] = "no-cache"
         resp.headers["Expires"] = "0"
         return resp
+
+    # --------------------
+    # Public marketing home (NO LOGIN)
+    # --------------------
+    @app.get("/")
+    def kdogs_home():
+        # If already logged in, go straight to app home
+        if session.get("user_id") and _session_user():
+            return redirect(url_for("home"))
+        return render_template("KDogsHomePage.html")
 
     # --------------------
     # Auth
@@ -236,8 +239,11 @@ def create_app():
 
     @app.get("/login")
     def login():
+        # If already logged in, don't show login again
         if session.get("user_id") and _session_user():
             return redirect(url_for("home"))
+
+        # default after login goes to /home
         next_url = request.args.get("next") or url_for("home")
         return render_template("login.html", next_url=next_url)
 
@@ -245,7 +251,7 @@ def create_app():
     def login_post():
         email = (request.form.get("username") or "").strip().lower()
         password = (request.form.get("password") or "").strip()
-        next_url = request.form.get("next_url") or url_for("home")
+        next_url = (request.form.get("next_url") or "").strip() or url_for("home")
 
         u = User.query.filter_by(email=email).first()
         if u and check_password_hash(u.password_hash, password):
@@ -263,9 +269,9 @@ def create_app():
         return redirect(url_for("login"))
 
     # --------------------
-    # Home / Properties
+    # Home / Properties (LOGGED IN)
     # --------------------
-    @app.get("/")
+    @app.get("/home")
     @login_required
     def home():
         u = current_user()
@@ -319,7 +325,6 @@ def create_app():
             .all()
         )
 
-        # ✅ NEW: split into completed vs drafts
         completed_studies = []
         draft_studies = []
         for s in studies:
@@ -738,7 +743,6 @@ def create_app():
                 db.session.add(comp)
                 db.session.flush()
 
-                # move temp photos for this row_key → component photos
                 if c["row_key"]:
                     temps = TempComponentPhoto.query.filter_by(
                         user_id=u.id,
@@ -862,7 +866,6 @@ def create_app():
                     db.session.flush()
                     keep_ids.add(c.id)
 
-                    # attach any temp photos from row_key (new rows created during edit)
                     if row["row_key"]:
                         temps = TempComponentPhoto.query.filter_by(
                             user_id=u.id,
@@ -1044,6 +1047,8 @@ app = create_app()
 if __name__ == "__main__":
     app.config["SESSION_COOKIE_SECURE"] = False  # local only
     app.run(host="127.0.0.1", port=5050, debug=True)
+
+
 
 
 

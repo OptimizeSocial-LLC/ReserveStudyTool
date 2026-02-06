@@ -2,10 +2,6 @@
 {% extends "base.html" %}
 {% block content %}
 
-{# ------------------------------------------------------------------
-   IMPORTANT: Drafts should never render this page.
-   If a draft hits this template for any reason, redirect to edit.
-   ------------------------------------------------------------------ #}
 {% if not study.is_paid %}
   <script>
     window.location.replace("{{ url_for('edit_study', study_id=study.id) }}");
@@ -73,41 +69,9 @@
   </div>
 </div>
 
-<div style="display:grid; grid-template-columns: 1fr 1fr; gap:14px;">
-  <div class="panel">
-    <div class="panel-header">
-      <h2>Components</h2>
-      <p>Stored inputs (including quantity and cycle).</p>
-    </div>
+<div style="display:grid; grid-template-columns: 1fr; gap:14px;">
 
-    <div style="overflow:auto;">
-      <table class="table" style="width:100%; margin-top:10px;">
-        <thead>
-          <tr>
-            <th>Name</th>
-            <th>Qty</th>
-            <th>UL</th>
-            <th>RL</th>
-            <th>Cycle</th>
-            <th style="text-align:right;">Cost</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for c in components %}
-            <tr>
-              <td>{{ c.name }}</td>
-              <td>{{ c.quantity }}</td>
-              <td>{{ c.useful_life_years }}</td>
-              <td>{{ c.remaining_life_years }}</td>
-              <td>{{ c.cycle_years }}</td>
-              <td style="text-align:right;">${{ "{:,.0f}".format(c.current_replacement_cost) }}</td>
-            </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-  </div>
-
+  <!-- Year-by-year results -->
   <div class="panel">
     <div class="panel-header">
       <h2>Year-by-year results</h2>
@@ -120,30 +84,47 @@
       </div>
     {% else %}
       <div style="overflow:auto;">
-        <table class="table" style="width:100%; margin-top:10px;">
+        <table class="table"
+               style="
+                 width:100%;
+                 margin-top:10px;
+                 border-collapse:collapse;
+                 table-layout:fixed;
+                 min-width:880px;
+               ">
+          <colgroup>
+            <col style="width:10%;">
+            <col style="width:13%;">
+            <col style="width:13%;">
+            <col style="width:13%;">
+            <col style="width:12%;">
+            <col style="width:12%;">
+            <col style="width:12%;">
+            <col style="width:15%;">
+          </colgroup>
           <thead>
             <tr>
-              <th>Year</th>
-              <th>Start</th>
-              <th>Contrib</th>
-              <th>Expenses</th>
-              <th>Interest</th>
-              <th>End</th>
-              <th>FFB</th>
-              <th>% Funded</th>
+              <th style="text-align:left; white-space:nowrap; padding:10px 12px;">Year</th>
+              <th style="text-align:left; white-space:nowrap; padding:10px 12px;">Start</th>
+              <th style="text-align:left; white-space:nowrap; padding:10px 12px;">Contrib</th>
+              <th style="text-align:left; white-space:nowrap; padding:10px 12px;">Expenses</th>
+              <th style="text-align:left; white-space:nowrap; padding:10px 12px;">Interest</th>
+              <th style="text-align:left; white-space:nowrap; padding:10px 12px;">End</th>
+              <th style="text-align:left; white-space:nowrap; padding:10px 12px;">FFB</th>
+              <th style="text-align:left; white-space:nowrap; padding:10px 12px;">% Funded</th>
             </tr>
           </thead>
           <tbody>
             {% for r in results %}
               <tr>
-                <td>{{ r.year }}</td>
-                <td>${{ "{:,.0f}".format(r.starting_balance) }}</td>
-                <td>${{ "{:,.0f}".format(r.contributions) }}</td>
-                <td>${{ "{:,.0f}".format(r.expenses) }}</td>
-                <td>${{ "{:,.0f}".format(r.interest_earned) }}</td>
-                <td>${{ "{:,.0f}".format(r.ending_balance) }}</td>
-                <td>${{ "{:,.0f}".format(r.fully_funded_balance) }}</td>
-                <td>{{ "{:.1%}".format(r.percent_funded) }}</td>
+                <td style="text-align:left; padding:8px 12px;">{{ r.year }}</td>
+                <td style="text-align:left; padding:8px 12px;">${{ "{:,.0f}".format(r.starting_balance) }}</td>
+                <td style="text-align:left; padding:8px 12px;">${{ "{:,.0f}".format(r.contributions) }}</td>
+                <td style="text-align:left; padding:8px 12px;">${{ "{:,.0f}".format(r.expenses) }}</td>
+                <td style="text-align:left; padding:8px 12px;">${{ "{:,.0f}".format(r.interest_earned) }}</td>
+                <td style="text-align:left; padding:8px 12px;">${{ "{:,.0f}".format(r.ending_balance) }}</td>
+                <td style="text-align:left; padding:8px 12px;">${{ "{:,.0f}".format(r.fully_funded_balance) }}</td>
+                <td style="text-align:left; padding:8px 12px;">{{ "{:.1%}".format(r.percent_funded) }}</td>
               </tr>
             {% endfor %}
           </tbody>
@@ -151,10 +132,115 @@
       </div>
     {% endif %}
   </div>
+
+  <!-- Components -->
+  <div class="panel">
+    <div class="panel-header">
+      <h2>Components</h2>
+      <p>Stored inputs (including quantity and cycle). Photos shown beside each component.</p>
+    </div>
+
+    {% if not components %}
+      <div style="margin-top:10px; color:var(--text-muted);">
+        No components found.
+      </div>
+    {% else %}
+      <div style="overflow:auto;">
+        <table class="table"
+               style="
+                 width:100%;
+                 margin-top:10px;
+                 border-collapse:collapse;
+                 table-layout:fixed;
+                 min-width:980px;
+               ">
+          {# ✅ colgroup fixes header spacing weirdness #}
+          <colgroup>
+            <col style="width:20%;">  {# Name #}
+            <col style="width:8%;">   {# Qty #}
+            <col style="width:8%;">   {# UL #}
+            <col style="width:8%;">   {# RL #}
+            <col style="width:10%;">  {# Cycle #}
+            <col style="width:12%;">  {# Cost #}
+            <col style="width:34%;">  {# Photos #}
+          </colgroup>
+
+          <thead>
+            <tr>
+              <th style="text-align:left; white-space:nowrap; padding:10px 12px;">Name</th>
+              <th style="text-align:left; white-space:nowrap; padding:10px 12px;">Qty</th>
+              <th style="text-align:left; white-space:nowrap; padding:10px 12px;">UL</th>
+              <th style="text-align:left; white-space:nowrap; padding:10px 12px;">RL</th>
+              <th style="text-align:left; white-space:nowrap; padding:10px 12px;">Cycle</th>
+              <th style="text-align:right; white-space:nowrap; padding:10px 12px;">Cost</th>
+              <th style="text-align:left; white-space:nowrap; padding:10px 12px;">Photos</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {% for c in components %}
+              <tr>
+                <td style="text-align:left; padding:10px 12px; vertical-align:top;">{{ c.name }}</td>
+                <td style="text-align:left; padding:10px 12px; vertical-align:top;">{{ c.quantity }}</td>
+                <td style="text-align:left; padding:10px 12px; vertical-align:top;">{{ c.useful_life_years }}</td>
+                <td style="text-align:left; padding:10px 12px; vertical-align:top;">{{ c.remaining_life_years }}</td>
+                <td style="text-align:left; padding:10px 12px; vertical-align:top;">{{ c.cycle_years }}</td>
+                <td style="text-align:right; padding:10px 12px; vertical-align:top;">
+                  ${{ "{:,.0f}".format(c.current_replacement_cost) }}
+                </td>
+
+                <td style="text-align:left; padding:10px 12px; vertical-align:top;">
+                  {% set photos = comp_photos.get(c.id, []) %}
+                  {% if photos %}
+                    {# ✅ grid keeps spacing consistent + supports multiple photos #}
+                    <div style="
+                      display:grid;
+                      grid-template-columns: repeat(4, 64px);
+                      gap:8px;
+                      align-content:start;
+                      justify-content:start;
+                    ">
+                      {% for p in photos %}
+                        <a href="{{ p.url }}" target="_blank" rel="noopener"
+                           title="{{ p.name or 'Photo' }}"
+                           style="
+                             display:block;
+                             width:64px;
+                             height:48px;
+                             border:1px solid rgba(255,255,255,0.10);
+                             border-radius:10px;
+                             overflow:hidden;
+                             background:rgba(255,255,255,0.03);
+                           ">
+                          <img src="{{ p.url }}" alt="{{ p.name or 'photo' }}"
+                               style="width:64px; height:48px; object-fit:cover; display:block;"
+                               loading="lazy" />
+                        </a>
+                      {% endfor %}
+                    </div>
+                  {% else %}
+                    <span style="color:var(--text-muted); font-size:13px;">—</span>
+                  {% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <p class="disclaimer-line" style="margin-top: 10px;">
+        Tip: Click a thumbnail to open the full image in a new tab.
+      </p>
+    {% endif %}
+  </div>
+
 </div>
 
 {% endif %}
 {% endblock %}
+
+
+
 
 
 

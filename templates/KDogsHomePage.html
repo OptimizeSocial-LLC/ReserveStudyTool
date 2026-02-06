@@ -1,0 +1,667 @@
+{% extends "base.html" %}
+{% block content %}
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Asar&family=Montserrat:wght@400;500;700&display=swap" rel="stylesheet">
+
+<style>
+  :root{
+    --navy:#004F7F;
+    --sky:#2CB6FF;
+    --ice:#E9F8FF;
+    --bg:#ffffff;
+
+    --radius-xl: 30px;
+    --radius-lg: 18px;
+
+    --container: 1120px;
+    --shadow: 0 10px 30px rgba(0,0,0,.08);
+
+    /* HERO HEIGHT: set once, makes text align perfectly */
+    --heroH: 340px;
+  }
+
+  html, body{
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #fff !important;
+  }
+
+  .rr-page{
+    background: var(--bg);
+    color: var(--navy);
+    font-family: Montserrat, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    overflow-x: hidden;
+  }
+
+  .rr-container{
+    width: min(var(--container), calc(100% - 40px));
+    margin: 0 auto;
+  }
+
+  .asar{
+    font-family: Asar, Georgia, "Times New Roman", serif;
+    color: var(--navy);
+    font-weight: 400;
+  }
+
+  /* =========================
+     NAV — links closer to CTA like designer
+     ========================= */
+  .rr-nav{
+    position: relative;
+    background: #fff;
+  }
+  .rr-nav-inner{
+    display:flex;
+    align-items:center;
+    gap: 20px;
+    padding: 22px 0 18px;
+  }
+  .rr-brand{
+    display:flex;
+    align-items:center;
+    gap: 12px;
+    min-width: 280px;
+    text-decoration:none;
+    flex: 0 0 auto;
+  }
+  .rr-brand img{
+    height: 56px;
+    width: auto;
+    display:block;
+  }
+
+  /* This pulls the links toward the right, near the CTA */
+  .rr-nav-center{
+    display:flex;
+    align-items:center;
+    gap: 36px;
+    margin-left: auto;   /* push to the right */
+    margin-right: 18px;  /* keep it close to CTA */
+  }
+  .rr-nav-center a{
+    color: var(--navy);
+    text-decoration:none;
+    font-size: 16px;
+    line-height: 26px;
+    letter-spacing: .35px;
+    white-space: nowrap;
+  }
+
+  /* BUTTONS */
+  .btn-solid{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    height: 43px;
+    padding: 0 18px;
+    background: var(--sky);
+    color: var(--navy);
+    border-radius: 9px;
+    text-decoration:none;
+    font-weight: 500;
+    border: 1px solid rgba(0,0,0,0);
+    transition: transform .12s ease, filter .12s ease;
+    white-space: nowrap;
+  }
+  .btn-outline{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    height: 36px;
+    padding: 0 16px;
+    background: transparent;
+    color: var(--navy);
+    border-radius: 9px;
+    text-decoration:none;
+    font-size: 16px;
+    line-height: 26px;
+    border: 1px solid var(--sky);
+    transition: transform .12s ease, filter .12s ease;
+    white-space: nowrap;
+  }
+  .btn-solid:hover, .btn-outline:hover{ filter: brightness(0.98); transform: translateY(-1px); }
+  .btn-solid:active, .btn-outline:active{ transform: translateY(0px); }
+
+  /* =========================
+     HERO — exact top/bottom alignment with image
+     - image has fixed height var(--heroH)
+     - text column min-height matches
+     - overlap into image like designer
+     ========================= */
+  .hero{
+    padding: 56px 0 52px; /* more whitespace so it doesn’t feel scrunched */
+  }
+
+  .hero-grid{
+    display:grid;
+    grid-template-columns: 520px 1fr;
+    gap: 0;
+    align-items: start;
+    position: relative;
+  }
+
+  .hero-copy{
+    position: relative;
+    z-index: 2;
+
+    /* overlap into the image column like the mock */
+    margin-right: -150px;
+    padding-right: 44px;
+
+    /* THIS is what makes top + bottom line up with the image */
+    min-height: var(--heroH);
+    display:flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+
+  .hero-title{
+    margin: 0;
+    font-size: 48px;
+    line-height: 62px;
+  }
+
+  /* ice highlight blocks (no pseudo slabs) */
+  .hero-title .hl{
+    display:inline-block;
+    background: var(--ice);
+    padding: 10px 14px;
+    -webkit-box-decoration-break: clone;
+    box-decoration-break: clone;
+  }
+  /* subtle right overhang like designer */
+  .hero-title .hl1{ padding-right: 46px; }
+  .hero-title .hl2{ padding-right: 74px; }
+
+  .hero-body{
+    margin-top: 12px;
+  }
+
+  .hero p{
+    font-size: 18px;
+    line-height: 26px;
+    margin: 0;
+    max-width: 430px;
+    color: var(--navy);
+  }
+
+  .hero-cta{
+    padding-bottom: 4px; /* tiny nudge so button visually kisses the bottom like the comp */
+  }
+
+  .hero-media{
+    display:flex;
+    justify-content:flex-end;
+  }
+
+  .hero-card{
+    width: 100%;
+    max-width: 720px;
+    height: var(--heroH);             /* lock height */
+    border-radius: var(--radius-xl);
+    overflow:hidden;
+    background: #fff;
+    box-shadow: var(--shadow);
+  }
+  .hero-card img{
+    width:100%;
+    height:100%;
+    object-fit: cover;
+    display:block;
+    border-radius: var(--radius-xl);
+  }
+
+  /* BAND (3 icons) */
+  .band{
+    background: var(--ice);
+    padding: 56px 0 64px;
+    margin-top: 10px;
+  }
+  .band h2{
+    font-size: 40px;
+    line-height: 50px;
+    text-align:center;
+    margin: 0 0 34px;
+    font-weight: 400;
+  }
+
+  .trio{
+    display:grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 26px;
+    align-items: start;
+  }
+  .trio-item{
+    text-align:center;
+    padding: 8px 10px 0;
+  }
+  .trio-item img{
+    width: 94px;
+    height: 94px;
+    display:block;
+    margin: 0 auto 14px;
+  }
+  .trio-item p{
+    margin: 0 auto;
+    max-width: 280px;
+    font-size: 18px;
+    line-height: 26px;
+    color: var(--navy);
+  }
+  .band-cta{
+    display:flex;
+    justify-content:center;
+    margin-top: 26px;
+  }
+
+  /* VALUE */
+  .value{
+    background: #fff;
+    padding: 60px 0 56px;
+  }
+  .value-grid{
+    display:grid;
+    grid-template-columns: 0.9fr 1.1fr;
+    gap: 48px;
+    align-items:center;
+  }
+  .value-img{
+    width: 100%;
+    border-radius: 40px;
+    display:block;
+    box-shadow: var(--shadow);
+  }
+  .value h2{
+    font-size: 40px;
+    line-height: 50px;
+    margin: 0 0 18px;
+  }
+  .value-cards{
+    display:flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .mini-card{
+    border: 1px solid var(--sky);
+    border-radius: 18px;
+    background: #fff;
+    padding: 16px 18px;
+  }
+  .mini-card .title{
+    font-size: 18px;
+    line-height: 26px;
+    font-weight: 700;
+    margin: 0 0 6px;
+    color: var(--navy);
+  }
+  .mini-card .desc{
+    font-size: 16px;
+    line-height: 22px;
+    margin: 0;
+    color: var(--navy);
+  }
+
+  /* PRICING */
+  .pricing{
+    background: var(--ice);
+    padding: 64px 0 70px;
+  }
+  .pricing h2{
+    font-size: 40px;
+    line-height: 50px;
+    text-align:center;
+    margin: 0 0 28px;
+    font-weight: 400;
+  }
+  .pricing-grid{
+    display:flex;
+    flex-direction: column;
+    gap: 22px;
+    max-width: 760px;
+    margin: 0 auto;
+  }
+
+  .tier{
+    border: 1px solid rgba(0,79,127,.90);
+    border-radius: var(--radius-lg);
+    padding: 22px;
+    background: transparent;
+    display:grid;
+    grid-template-columns: 240px 1fr;
+    gap: 20px;
+    align-items: start;
+  }
+
+  .tier-left{
+    text-align:center;
+    padding-top: 10px;
+  }
+  .tier-name{
+    font-size: 28px;
+    font-weight: 700;
+    margin: 0 0 10px;
+    color: var(--navy);
+  }
+  .tier-price{
+    font-size: 36px;
+    font-weight: 700;
+    color: var(--sky);
+    line-height: 26px;
+    margin: 0 0 14px;
+  }
+  .tier-left .btn-solid{
+    height: 31px;
+    font-size: 14px;
+    padding: 0 16px;
+  }
+
+  .tier-right .tier-sub{
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--navy);
+    margin: 8px 0 10px;
+  }
+  .tier-right ul{
+    margin: 0;
+    padding-left: 18px;
+    color: var(--navy);
+    font-size: 14px;
+    line-height: 22px;
+  }
+  .tier-right li{ margin: 6px 0; }
+  .tier-right strong{ font-weight: 700; }
+
+  /* CLOSING */
+  .closing{
+    background: var(--ice);
+    padding: 56px 0 36px;
+  }
+  .closing h3{
+    font-size: 30px;
+    line-height: 38px;
+    text-align:center;
+    margin: 0 0 16px;
+    font-weight: 400;
+  }
+  .closing .center{
+    display:flex;
+    justify-content:center;
+    margin-top: 12px;
+  }
+
+  .footer{
+    background:#fff;
+    padding: 18px 0 26px;
+    text-align:center;
+    border-top: 1px solid rgba(0,79,127,.10);
+  }
+  .footer img{
+    height: 56px;
+    width:auto;
+    display:block;
+    margin: 0 auto 10px;
+  }
+  .footer .copy{
+    font-size: 14px;
+    line-height: 22px;
+    color: var(--navy);
+  }
+
+  @media (max-width: 980px){
+    .hero-grid{ grid-template-columns: 1fr; gap: 18px; }
+    .hero-copy{
+      margin-right: 0;
+      padding-right: 0;
+      min-height: auto;
+      justify-content: flex-start;
+      gap: 18px;
+    }
+    .hero-card{ height: auto; aspect-ratio: 16 / 9; }
+    .hero-card img{ height: 100%; }
+    .rr-nav-center{ display:none; }
+    .value-grid{ grid-template-columns: 1fr; }
+  }
+  @media (max-width: 760px){
+    .trio{ grid-template-columns: 1fr; }
+    .hero-title, .band h2, .value h2, .pricing h2{ font-size: 34px; line-height: 44px; }
+    .tier{ grid-template-columns: 1fr; }
+    .tier-left{
+      text-align:left;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 14px;
+      padding-top: 0;
+    }
+    .tier-left .btn-solid{ margin-top: 0; }
+  }
+</style>
+
+{% set get_started_url = url_for('login', next=url_for('home')) %}
+
+<div class="rr-page">
+
+  <header class="rr-nav">
+    <div class="rr-container">
+      <div class="rr-nav-inner">
+        <a class="rr-brand" href="{{ url_for('kdogs_home') }}" aria-label="Rapid Reserve Home">
+          <img
+            src="{{ url_for('static', filename='Rapid Reserve Homepage_img/Rapid Reserve Study logo 1.png') }}"
+            alt="Rapid Reserve Study"
+          />
+        </a>
+
+        <nav class="rr-nav-center" aria-label="Primary">
+          <a href="#about">ABOUT US</a>
+          <a href="#pricing">PRICING</a>
+        </nav>
+
+        <a class="btn-outline" href="{{ get_started_url }}">GET STARTED</a>
+      </div>
+    </div>
+  </header>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="rr-container">
+      <div class="hero-grid">
+
+        <div class="hero-copy">
+          <div>
+            <h1 class="asar hero-title">
+              <span class="hl hl1">Great neighborhoods</span><br/>
+              <span class="hl hl2">deserve great budgeting.</span>
+            </h1>
+
+            <div class="hero-body">
+              <p>
+                Manage your property and steward your neighborhood’s finances well with a cost-effective reserve study built for your community.
+              </p>
+            </div>
+          </div>
+
+          <div class="hero-cta">
+            <a class="btn-solid" href="{{ get_started_url }}">GET STARTED</a>
+          </div>
+        </div>
+
+        <div class="hero-media">
+          <div class="hero-card">
+            <img
+              src="{{ url_for('static', filename='Rapid Reserve Homepage_img/Rectangle-1.png') }}"
+              alt="Neighborhood aerial"
+            />
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <section class="band" id="about">
+    <div class="rr-container">
+      <h2 class="asar">Prepare in the present for success in the future.</h2>
+
+      <div class="trio">
+        <div class="trio-item">
+          <img src="{{ url_for('static', filename='Rapid Reserve Homepage_icon/savings_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24 1.svg') }}" alt="" aria-hidden="true">
+          <p>Save enough capital to pay for your community’s future maintenance and improvement.</p>
+        </div>
+
+        <div class="trio-item">
+          <img src="{{ url_for('static', filename='Rapid Reserve Homepage_icon/handshake_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24 1.svg') }}" alt="" aria-hidden="true">
+          <p>Build a community of trust, with residents informed and bought in.</p>
+        </div>
+
+        <div class="trio-item">
+          <img src="{{ url_for('static', filename='Rapid Reserve Homepage_icon/self_improvement_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24 1.svg') }}" alt="" aria-hidden="true">
+          <p>Enjoy the confidence that accurate, cost-effective financial planning brings.</p>
+        </div>
+      </div>
+
+      <div class="band-cta">
+        <a class="btn-solid" href="{{ get_started_url }}">GET STARTED</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="value">
+    <div class="rr-container">
+      <div class="value-grid">
+        <div>
+          <img
+            class="value-img"
+            src="{{ url_for('static', filename='Rapid Reserve Homepage_img/Rectangle.png') }}"
+            alt="Community walking"
+          />
+        </div>
+
+        <div>
+          <h2 class="asar">Save time and get quality<br/>with Rapid Reserve.</h2>
+
+          <div class="value-cards">
+            <div class="mini-card">
+              <p class="title">BUDGET FRIENDLY PRICING</p>
+              <p class="desc">We provide you with a reliable planning tool at a lower price due to deep financial and construction industry analytics.</p>
+            </div>
+
+            <div class="mini-card">
+              <p class="title">QUALITY DATA</p>
+              <p class="desc">Our database is up-to-date with current labor and material costs that are specific to your region.</p>
+            </div>
+
+            <div class="mini-card">
+              <p class="title">EXPERT GUIDANCE</p>
+              <p class="desc">Led by a team with a combined 47 years of construction, real estate, and data analysis experience.</p>
+            </div>
+
+            <div class="mini-card">
+              <p class="title">GOOD - BETTER - BEST</p>
+              <p class="desc">No one-size-fits-all solutions here. Select the best level of analysis for your community.</p>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <section class="pricing" id="pricing">
+    <div class="rr-container">
+      <h2 class="asar">Choose the level of service that meets<br/>the need of your community.</h2>
+
+      <div class="pricing-grid">
+
+        <div class="tier">
+          <div class="tier-left">
+            <div>
+              <div class="tier-name">ESSENTIALS</div>
+              <div class="tier-price">$500</div>
+            </div>
+            <a class="btn-solid" href="{{ get_started_url }}">GET STARTED</a>
+          </div>
+
+          <div class="tier-right">
+            <div class="tier-sub">What’s included:</div>
+            <ul>
+              <li><strong>Deep analysis</strong> of your community’s most expensive components and systems</li>
+              <li><strong>Table</strong> format with <strong>essentials in narrative form</strong></li>
+              <li><strong>Analysis</strong> of historical reserve information and previous studies (if provided)</li>
+              <li>Clear <strong>funding recommendations</strong> for your selected time-frame</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="tier">
+          <div class="tier-left">
+            <div>
+              <div class="tier-name">PLUS</div>
+              <div class="tier-price">$1700</div>
+            </div>
+            <a class="btn-solid" href="{{ get_started_url }}">GET STARTED</a>
+          </div>
+
+          <div class="tier-right">
+            <div class="tier-sub">Includes Essentials tier AND:</div>
+            <ul>
+              <li><strong>Project manager review</strong> of components list and broad condition rating of components depicted in uploaded photos</li>
+              <li><strong>Alert to areas of major concern</strong> like severe under-funding or photo evidence of expensive defects like foundation settlement or severely damaged equipment</li>
+              <li><strong>Full narrative report</strong> that helps you tell the story of your community’s data</li>
+              <li><strong>Photo upload capability</strong> to support and deepen narrative report</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="tier">
+          <div class="tier-left">
+            <div>
+              <div class="tier-name">PREMIUM</div>
+              <div class="tier-price">$3000</div>
+            </div>
+            <a class="btn-solid" href="{{ get_started_url }}">GET STARTED</a>
+          </div>
+
+          <div class="tier-right">
+            <div class="tier-sub">Includes Essentials &amp; Plus tiers AND:</div>
+            <ul>
+              <li><strong>Expert on-site inspection</strong> and analysis by an experienced project manager</li>
+              <li><strong>Triage ranking of Top 3</strong> maintenance and/or restoration priorities along with ROM (rough order of magnitude) pricing</li>
+            </ul>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <section class="closing">
+    <div class="rr-container">
+      <h3 class="asar">Manage your property and<br/>maintain trust with your residents.</h3>
+      <div class="center">
+        <a class="btn-solid" href="{{ get_started_url }}">LET US HELP</a>
+      </div>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <img
+      src="{{ url_for('static', filename='Rapid Reserve Homepage_img/Rapid Reserve Study logo 2.png') }}"
+      alt="Rapid Reserve Study"
+      onerror="this.onerror=null;this.src='{{ url_for('static', filename='Rapid Reserve Homepage_img/Rapid Reserve Study logo 1.png') }}';"
+    />
+    <div class="copy">© 2026 Rapid Reserve Study.</div>
+  </footer>
+
+</div>
+
+{% endblock %}
+
+
+
+
+
+
+
