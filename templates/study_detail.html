@@ -19,25 +19,53 @@
   </noscript>
 {% else %}
 
+{% set is_admin_user = (current_user and current_user.is_admin) %}
+{% set ws = (study.workflow_status or "").lower() %}
+{% set tier = (study.tier or "").lower() %}
+
 <section class="page-header">
   <h1>{{ study.property.name }} — Study created on {{ study.created_at.strftime("%Y-%m-%d") }}</h1>
   <div style="margin-top:6px; color: var(--text-muted);">
     Status:
-    <strong>Paid (Locked)</strong>
+    {% if tier == "plus" and ws == "paid_awaiting_review" %}
+      <strong>Plus — awaiting expert approval</strong>
+    {% elif tier == "premium" and ws == "paid_pending_admin_build" %}
+      <strong>Premium — in progress</strong>
+    {% elif ws == "approved_final" %}
+      <strong>Approved (Published)</strong>
+    {% else %}
+      <strong>Paid (Locked)</strong>
+    {% endif %}
   </div>
 </section>
 
 <div class="panel" style="margin-bottom:18px;">
   <div class="panel-header">
     <h2>Actions</h2>
-    <p>This study has been paid and is locked for editing.</p>
+    <p>
+      {% if is_admin_user %}
+        Admins can edit paid studies.
+      {% else %}
+        This study has been paid and is locked for editing.
+      {% endif %}
+    </p>
   </div>
 
   <div class="form-actions" style="margin-top:12px; display:flex; gap:10px; flex-wrap:wrap;">
-    <a class="btn-outline-sm" href="{{ url_for('study_detail', study_id=study.id) }}">View (locked)</a>
+    <a class="btn-outline-sm" href="{{ url_for('study_detail', study_id=study.id) }}">View</a>
     <a class="btn-outline-sm" href="{{ url_for('clone_study', study_id=study.id) }}">Clone</a>
     <a class="btn-outline-sm" href="{{ url_for('property_page', property_id=study.property_id) }}">Back to property</a>
     <a class="btn-outline-sm" href="{{ url_for('home') }}">Home</a>
+
+    {% if is_admin_user %}
+      <a class="btn-primary-sm" href="{{ url_for('edit_study', study_id=study.id) }}">Edit study</a>
+
+      {% if ws in ["paid_awaiting_review", "paid_pending_admin_build"] %}
+        <form method="post" action="{{ url_for('admin_approve', study_id=study.id) }}">
+          <button type="submit" class="btn-primary-sm">Complete &amp; approve</button>
+        </form>
+      {% endif %}
+    {% endif %}
   </div>
 </div>
 
@@ -154,15 +182,14 @@
                  table-layout:fixed;
                  min-width:980px;
                ">
-          {# ✅ colgroup fixes header spacing weirdness #}
           <colgroup>
-            <col style="width:20%;">  {# Name #}
-            <col style="width:8%;">   {# Qty #}
-            <col style="width:8%;">   {# UL #}
-            <col style="width:8%;">   {# RL #}
-            <col style="width:10%;">  {# Cycle #}
-            <col style="width:12%;">  {# Cost #}
-            <col style="width:34%;">  {# Photos #}
+            <col style="width:20%;">
+            <col style="width:8%;">
+            <col style="width:8%;">
+            <col style="width:8%;">
+            <col style="width:10%;">
+            <col style="width:12%;">
+            <col style="width:34%;">
           </colgroup>
 
           <thead>
@@ -192,7 +219,6 @@
                 <td style="text-align:left; padding:10px 12px; vertical-align:top;">
                   {% set photos = comp_photos.get(c.id, []) %}
                   {% if photos %}
-                    {# ✅ grid keeps spacing consistent + supports multiple photos #}
                     <div style="
                       display:grid;
                       grid-template-columns: repeat(4, 64px);
@@ -238,6 +264,8 @@
 
 {% endif %}
 {% endblock %}
+
+
 
 
 

@@ -1,10 +1,10 @@
-{# templates/checkout.html #}
+{# templates/premium_checkout.html #}
 {% extends "base.html" %}
 {% block content %}
 
 <section class="page-header">
-  <h1>Checkout — {{ tier_label }}</h1>
-  <p>{{ study.property.name }}</p>
+  <h1>Checkout — Premium</h1>
+  <p>Request #{{ pr.id }}</p>
 </section>
 
 <div class="panel">
@@ -14,17 +14,14 @@
   </div>
 
   <div style="margin-top:12px; display:flex; gap:10px; flex-wrap:wrap;">
-    <form method="post" action="{{ url_for('checkout_simulate_success', study_id=study.id) }}">
+    <form method="post" action="{{ url_for('premium_checkout_simulate_success', premium_request_id=pr.id) }}">
       <button class="btn-primary-sm" type="submit">
         Pay {{ price_label }} (Simulate Success)
       </button>
     </form>
 
-    <a class="btn-outline-sm" href="{{ url_for('edit_study', study_id=study.id) }}">Back to edit</a>
-    <a class="btn-outline-sm" href="{{ url_for('property_page', property_id=study.property_id) }}">Back to property</a>
+    <a class="btn-outline-sm" href="{{ url_for('property_page', property_id=pr.property_id) }}">Back to property</a>
   </div>
 </div>
 
 {% endblock %}
-
-

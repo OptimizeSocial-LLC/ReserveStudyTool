@@ -1,144 +1,199 @@
 {% extends "base.html" %}
-
 {% block content %}
+
 <section class="page-header">
   <h1>Reserve Study Tool</h1>
   <p>Create a property, run a reserve study, download a report, and reuse prior data via cloning.</p>
 </section>
 
-<!-- Create property -->
-<div class="panel" style="margin-bottom: 18px;">
+<div class="panel" style="margin-bottom:18px;">
   <div class="panel-header">
     <h2>Create a property</h2>
   </div>
 
-  <form class="upload-form" action="{{ url_for('create_property') }}" method="post" style="margin-top:12px;">
-    <div style="display:grid; grid-template-columns: 1fr; gap: 12px;">
+  <form method="post" action="{{ url_for('create_property') }}" style="margin-top:12px;">
+    <div style="display:grid; grid-template-columns: 1fr; gap:12px;">
+
       <div class="form-row" style="margin-bottom:0;">
-        <label for="name">Property name (required)</label>
-        <input id="name" name="name" type="text" placeholder="Property name (required)" required />
+        <label>Property name (required)</label>
+        <input name="name" type="text" placeholder="Property name (required)" required />
       </div>
 
-      <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+      <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
         <div class="form-row" style="margin-bottom:0;">
-          <label for="city">City</label>
-          <input id="city" name="city" type="text" placeholder="City" />
+          <label>City</label>
+          <input name="city" type="text" placeholder="City" />
         </div>
 
         <div class="form-row" style="margin-bottom:0;">
-          <label for="state">State</label>
-          <input id="state" name="state" type="text" placeholder="State" />
+          <label>State</label>
+          <input name="state" type="text" placeholder="State" />
         </div>
       </div>
 
       <div class="form-row" style="margin-bottom:0;">
-        <label for="address">Address</label>
-        <input id="address" name="address" type="text" placeholder="Address" />
+        <label>Address</label>
+        <input name="address" type="text" placeholder="Address" />
       </div>
-    </div>
 
-    <div class="form-actions" style="margin-top: 14px;">
-      <button type="submit" class="btn-primary-sm">Create property</button>
+      <div class="form-actions" style="margin-top:4px;">
+        <button type="submit" class="btn-primary-sm">Create property</button>
+      </div>
+
     </div>
   </form>
 </div>
 
-<!-- Properties list -->
 <div class="panel">
   <div class="panel-header">
     <h2>Properties</h2>
     <p>Open a property to view history and run new studies.</p>
   </div>
 
-  <!-- Search bar -->
-  <div style="margin-top: 12px; display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
-    <div style="flex: 1; min-width: 260px;">
-      <label for="property-search" style="display:block; font-size:13px; font-weight:500; margin-bottom:6px;">
-        Search properties
-      </label>
-      <input
-        id="property-search"
-        type="text"
-        placeholder="Type a company/property name…"
-        autocomplete="off"
-      />
-      <div class="field-help">Search matches name or location.</div>
+  <div style="margin-top:12px;">
+
+    <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;">
+      <div style="flex:1; min-width:260px;">
+        <div style="font-weight:600; margin-bottom:6px;">Search properties</div>
+        <input id="propSearch" type="text" placeholder="Type a company/property name…" />
+        <div style="font-size:13px; color:var(--text-muted); margin-top:6px;">
+          Search matches name or location.
+        </div>
+      </div>
+
+      <div style="color:var(--text-muted); font-size:13px; white-space:nowrap;">
+        <span id="countShown">0</span> of <span id="countTotal">0</span> shown
+      </div>
     </div>
 
-    <div style="font-size:12px; color: var(--text-muted); padding-top: 22px;">
-      <span id="match-count"></span>
-    </div>
-  </div>
+    <div style="overflow:auto; margin-top:12px;">
+      <table class="table" style="width:100%; border-collapse:collapse; min-width:860px;">
 
-  <div class="table-scroll" style="margin-top: 12px;">
-    <table class="forecast-table" id="properties-table">
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Location</th>
-          <th></th>
-        </tr>
-      </thead>
+        <colgroup>
+          <col style="width:34%;">
+          <col style="width:34%;">
+          {% if current_user and current_user.is_admin %}
+            <col style="width:18%;">
+          {% endif %}
+          <col style="width:14%;">
+        </colgroup>
 
-      <tbody>
-        {% for p in properties %}
-          {% set loc_parts = [] %}
-          {% if p.city %}{% set _ = loc_parts.append(p.city) %}{% endif %}
-          {% if p.state %}{% set _ = loc_parts.append(p.state) %}{% endif %}
-          {% set location = loc_parts | join(", ") %}
+        <thead>
+          <tr>
+            <th style="text-align:left; padding:10px 12px;">Name</th>
+            <th style="text-align:left; padding:10px 12px;">Location</th>
 
-          <tr
-            class="js-property-row"
-            data-name="{{ (p.name or '') | lower }}"
-            data-location="{{ (location or '') | lower }}"
-          >
-            <td style="font-weight:600;">{{ p.name }}</td>
-            <td style="color: var(--text-muted);">
-              {{ location if location else "—" }}
-            </td>
-            <td class="value-cell">
-              <a class="btn-outline-sm" href="{{ url_for('property_page', property_id=p.id) }}">Open</a>
-            </td>
+            {% if current_user and current_user.is_admin %}
+              <th style="text-align:left; padding:10px 12px;">Needs review</th>
+            {% endif %}
+
+            <th style="text-align:right; padding:10px 12px;"></th>
           </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
+        </thead>
 
-  <div id="no-results" class="disclaimer-line" style="display:none; margin-top: 12px;">
-    No properties match that search.
+        <tbody id="propsTbody">
+          {% for row in properties_view %}
+            {% set p = row.prop %}
+            {% set loc = ((p.city or '') ~ (', ' if p.city and p.state else '') ~ (p.state or '')) %}
+
+            <tr class="propRow"
+                data-name="{{ (p.name or '')|lower }}"
+                data-loc="{{ loc|lower }}"
+                data-needs-review="{{ '1' if row.needs_review else '0' }}">
+
+              <td style="padding:12px; font-weight:600;">
+                {{ p.name }}
+              </td>
+
+              <td style="padding:12px; color:var(--text-muted);">
+                {{ loc if loc.strip() else "—" }}
+              </td>
+
+              {% if current_user and current_user.is_admin %}
+                <td style="padding:12px;">
+
+                  {% if row.needs_review %}
+                    <span style="
+                      display:inline-flex;
+                      align-items:center;
+                      gap:8px;
+                      padding:6px 10px;
+                      border-radius:999px;
+                      border:1px solid rgba(255, 110, 110, 0.35);
+                      background: rgba(255, 110, 110, 0.10);
+                      color: rgba(255, 220, 220, 0.95);
+                      font-size:12px;
+                      font-weight:700;
+                      letter-spacing:0.02em;">
+
+                      Needs review
+
+                      <span style="
+                        display:inline-flex;
+                        align-items:center;
+                        justify-content:center;
+                        min-width:22px;
+                        height:18px;
+                        padding:0 6px;
+                        border-radius:999px;
+                        border:1px solid rgba(255,255,255,0.14);
+                        background: rgba(0,0,0,0.20);
+                        font-weight:800;">
+                        {{ row.pending_count }}
+                      </span>
+
+                    </span>
+                  {% else %}
+                    <span style="color:var(--text-muted); font-size:13px;">—</span>
+                  {% endif %}
+
+                </td>
+              {% endif %}
+
+              <td style="padding:12px; text-align:right;">
+                <a class="btn-outline-sm" href="{{ url_for('property_page', property_id=p.id) }}">Open</a>
+              </td>
+
+            </tr>
+          {% endfor %}
+        </tbody>
+
+      </table>
+    </div>
   </div>
 </div>
 
 <script>
-  (function () {
-    const input = document.getElementById("property-search");
-    const rows = Array.from(document.querySelectorAll(".js-property-row"));
-    const countEl = document.getElementById("match-count");
-    const noResults = document.getElementById("no-results");
+(function(){
+  const search = document.getElementById("propSearch");
+  const tbody = document.getElementById("propsTbody");
+  const rows = Array.from(tbody.querySelectorAll(".propRow"));
+  const countShown = document.getElementById("countShown");
+  const countTotal = document.getElementById("countTotal");
 
-    function update() {
-      const q = (input.value || "").trim().toLowerCase();
-      let shown = 0;
+  countTotal.textContent = String(rows.length);
 
-      rows.forEach((row) => {
-        const name = row.getAttribute("data-name") || "";
-        const loc = row.getAttribute("data-location") || "";
-        const match = !q || name.includes(q) || loc.includes(q);
-        row.style.display = match ? "" : "none";
-        if (match) shown += 1;
-      });
+  function applyFilter(){
+    const q = (search.value || "").trim().toLowerCase();
+    let shown = 0;
 
-      countEl.textContent = rows.length
-        ? `${shown} of ${rows.length} shown`
-        : "";
+    rows.forEach(r => {
+      const name = r.dataset.name || "";
+      const loc = r.dataset.loc || "";
+      const match = (!q) || name.includes(q) || loc.includes(q);
+      r.style.display = match ? "" : "none";
+      if (match) shown++;
+    });
 
-      noResults.style.display = (rows.length && shown === 0) ? "" : "none";
-    }
+    countShown.textContent = String(shown);
+  }
 
-    input.addEventListener("input", update);
-    update();
-  })();
+  applyFilter();
+  search.addEventListener("input", applyFilter);
+})();
 </script>
+
 {% endblock %}
+
+
 

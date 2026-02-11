@@ -1,111 +1,183 @@
 {% extends "base.html" %}
-
 {% block content %}
+
 <section class="page-header">
   <h1>{{ prop.name }}</h1>
   <p>
-    {% if prop.city or prop.state %}
-      {{ prop.city or "" }}{% if prop.city and prop.state %}, {% endif %}{{ prop.state or "" }}
-    {% else %}
-      &nbsp;
-    {% endif %}
+    {% if prop.city and prop.state %}{{ prop.city }}, {{ prop.state }}{% endif %}
   </p>
 </section>
 
-<div class="form-actions" style="margin-bottom: 14px; display:flex; gap:10px; flex-wrap:wrap;">
+<div class="form-actions" style="margin-bottom:14px; display:flex; gap:10px; flex-wrap:wrap;">
   <a href="{{ url_for('home') }}" class="btn-outline-sm">← Back to home</a>
 </div>
 
-<!-- COMPLETED STUDIES (TOP) -->
-<div class="panel" style="margin-bottom:18px;">
-  <div class="panel-header" style="display:flex; align-items:flex-start; justify-content:space-between; gap:16px;">
-    <div>
-      <h2>Completed studies</h2>
-      <p>Paid studies are locked and read-only. You can view results and clone them.</p>
+<div class="forecast-layout" style="margin-top: 0;">
+  <!-- LEFT -->
+  <div class="panel">
+    <div class="panel-header">
+      <h2>Start a new order</h2>
+      <p>Choose the tier. Essentials/Plus: you fill inputs. Premium: our team builds the study.</p>
     </div>
 
-    <a class="btn-pill" href="{{ url_for('new_study', property_id=prop.id) }}">New study</a>
+    <div style="margin-top:12px; display:flex; gap:10px; flex-wrap:wrap;">
+      <a class="btn-primary-sm" href="{{ url_for('new_study', property_id=prop.id, tier='essentials') }}">
+        New Essentials Study
+      </a>
+
+      <a class="btn-primary-sm" href="{{ url_for('new_study', property_id=prop.id, tier='plus') }}">
+        New Plus Study
+      </a>
+
+      <form method="post" action="{{ url_for('premium_start') }}" style="display:inline;">
+        <input type="hidden" name="property_id" value="{{ prop.id }}">
+        <button type="submit" class="btn-primary-sm">
+          Request Premium (On-site)
+        </button>
+      </form>
+    </div>
+
+    {% if pending_review and pending_review|length %}
+      <div class="panel" style="margin-top:14px;">
+        <div class="panel-header">
+          <h2>Plus — awaiting admin review</h2>
+          <p>These have been paid and are waiting on our team to review/approve.</p>
+        </div>
+
+        <div style="margin-top:10px;">
+          {% for s in pending_review %}
+            <div style="display:flex; justify-content:space-between; gap:12px; padding:10px 0; border-top:1px solid rgba(255,255,255,0.08);">
+              <div style="color:var(--text-muted); font-size:13px;">
+                Created {{ s.created_at.date() }}
+              </div>
+              <div>
+                <a class="btn-outline-sm" href="{{ url_for('study_detail', study_id=s.id) }}">View status</a>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+    {% endif %}
+
+    {% if premium_pending and premium_pending|length %}
+      <div class="panel" style="margin-top:14px;">
+        <div class="panel-header">
+          <h2>Premium — pending admin build</h2>
+          <p>These Premium studies are waiting on our team to build and approve.</p>
+        </div>
+
+        <div style="margin-top:10px;">
+
+          <!-- ONLY ACTION = BUILD / EDIT -->
+          {% for s in premium_pending %}
+            <div style="display:flex; justify-content:space-between; gap:12px; padding:10px 0; border-top:1px solid rgba(255,255,255,0.08);">
+              <div style="font-size:13px;">
+                <div style="color:var(--text-muted);">Created {{ s.created_at.date() }}</div>
+                <div>
+                  Tier: <strong>{{ s.tier }}</strong> · 
+                  Status: <strong>{{ s.workflow_status }}</strong>
+                </div>
+              </div>
+
+              <div style="display:flex; gap:8px; align-items:center;">
+                <a class="btn-outline-sm" href="{{ url_for('edit_study', study_id=s.id) }}">
+                  Build / Edit
+                </a>
+              </div>
+            </div>
+          {% endfor %}
+
+        </div>
+      </div>
+    {% endif %}
+
+    {% if premium_reqs and premium_reqs|length %}
+      <div class="panel" style="margin-top:14px;">
+        <div class="panel-header">
+          <h2>Premium requests</h2>
+          <p>Paid → schedule → our team builds → it appears here when approved.</p>
+        </div>
+
+        <div style="margin-top:10px;">
+          {% for pr in premium_reqs %}
+            <div style="display:flex; justify-content:space-between; gap:12px; padding:10px 0; border-top:1px solid rgba(255,255,255,0.08);">
+              <div style="font-size:13px;">
+                <div style="color:var(--text-muted);">Request #{{ pr.id }} · {{ pr.created_at.date() }}</div>
+                <div>
+                  Status:
+                  <strong>{{ pr.status }}</strong>
+                  {% if pr.scheduled_at %}
+                    · Scheduled: {{ pr.scheduled_at }}
+                  {% endif %}
+                </div>
+              </div>
+              <div>
+                {% if pr.paid and pr.status == 'paid_pending_schedule' %}
+                  <a class="btn-outline-sm" href="{{ url_for('premium_schedule', premium_request_id=pr.id) }}">Choose time</a>
+                {% elif (not pr.paid) %}
+                  <a class="btn-outline-sm" href="{{ url_for('premium_checkout', premium_request_id=pr.id) }}">Finish payment</a>
+                {% else %}
+                  <span style="color:var(--text-muted); font-size:13px;">In progress</span>
+                {% endif %}
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+    {% endif %}
   </div>
 
-  <div class="table-scroll" style="margin-top: 12px;">
-    <table class="forecast-table">
-      <thead>
-        <tr>
-          <th>Created</th>
-          <th>Start</th>
-          <th>Horizon</th>
-          <th class="value-cell"></th>
-        </tr>
-      </thead>
-      <tbody>
-        {% if completed_studies and completed_studies|length > 0 %}
-          {% for s in completed_studies %}
-          <tr>
-            <td>{{ s.created_at.strftime("%Y-%m-%d") }}</td>
-            <td>{{ s.start_year }}</td>
-            <td>{{ s.horizon_years }} years</td>
-            <td class="value-cell">
-              <a class="btn-outline-sm" href="{{ url_for('study_detail', study_id=s.id) }}" style="margin-right:8px;">View</a>
-              <a class="btn-outline-sm" href="{{ url_for('clone_study', study_id=s.id) }}">Clone</a>
-            </td>
-          </tr>
-          {% endfor %}
-        {% else %}
-          <tr>
-            <td colspan="4" style="color: var(--text-muted); padding: 14px 10px;">
-              No completed studies yet.
-            </td>
-          </tr>
-        {% endif %}
-      </tbody>
-    </table>
+  <!-- RIGHT -->
+  <div class="panel">
+    <div class="panel-header">
+      <h2>Tier details</h2>
+      <p>So you know exactly what you’re paying for.</p>
+    </div>
+
+    <div style="margin-top:12px; display:grid; gap:12px;">
+      <div class="panel" style="padding:14px;">
+        <div style="font-size:12px; color:var(--text-muted);">ESSENTIALS</div>
+        <div style="font-size:22px; font-weight:800;">{{ tier_prices.essentials }}</div>
+      </div>
+
+      <div class="panel" style="padding:14px;">
+        <div style="font-size:12px; color:var(--text-muted);">PLUS</div>
+        <div style="font-size:22px; font-weight:800;">{{ tier_prices.plus }}</div>
+      </div>
+
+      <div class="panel" style="padding:14px;">
+        <div style="font-size:12px; color:var(--text-muted);">PREMIUM</div>
+        <div style="font-size:22px; font-weight:800;">{{ tier_prices.premium }}</div>
+      </div>
+    </div>
   </div>
 </div>
 
-<!-- DRAFT STUDIES (BELOW) -->
-<div class="panel">
-  <div class="panel-header" style="display:flex; align-items:flex-start; justify-content:space-between; gap:16px;">
-    <div>
-      <h2>Draft studies</h2>
-      <p>Drafts are editable. You can edit, checkout to complete, or clone.</p>
-    </div>
+<!-- Completed + Drafts -->
+<div class="panel" style="margin-top:14px;">
+  <div class="panel-header">
+    <h2>Completed studies</h2>
   </div>
 
-  <div class="table-scroll" style="margin-top: 12px;">
-    <table class="forecast-table">
-      <thead>
-        <tr>
-          <th>Created</th>
-          <th>Start</th>
-          <th>Horizon</th>
-          <th class="value-cell"></th>
-        </tr>
-      </thead>
-      <tbody>
-        {% if draft_studies and draft_studies|length > 0 %}
-          {% for s in draft_studies %}
-          <tr>
-            <td>{{ s.created_at.strftime("%Y-%m-%d") }}</td>
-            <td>{{ s.start_year }}</td>
-            <td>{{ s.horizon_years }} years</td>
-            <td class="value-cell">
-              <a class="btn-outline-sm" href="{{ url_for('edit_study', study_id=s.id) }}" style="margin-right:8px;">Edit</a>
-              <a class="btn-outline-sm" href="{{ url_for('checkout', study_id=s.id) }}" style="margin-right:8px;">Checkout</a>
-              <a class="btn-outline-sm" href="{{ url_for('clone_study', study_id=s.id) }}">Clone</a>
-            </td>
-          </tr>
-          {% endfor %}
-        {% else %}
-          <tr>
-            <td colspan="4" style="color: var(--text-muted); padding: 14px 10px;">
-              No drafts yet. Click “New study” above to start one.
-            </td>
-          </tr>
-        {% endif %}
-      </tbody>
-    </table>
+  <div style="margin-top:10px;">
+    {% if completed_studies and completed_studies|length %}
+      {% for s in completed_studies %}
+        <div style="display:flex; justify-content:space-between; gap:12px; padding:10px 0;">
+          <div>Created {{ s.created_at.date() }}</div>
+          <a class="btn-outline-sm" href="{{ url_for('study_detail', study_id=s.id) }}">View</a>
+        </div>
+      {% endfor %}
+    {% else %}
+      <div style="color:var(--text-muted);">No completed studies yet.</div>
+    {% endif %}
   </div>
 </div>
 
 {% endblock %}
+
+
+
+
+
+
 

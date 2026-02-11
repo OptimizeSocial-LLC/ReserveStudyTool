@@ -1,6 +1,7 @@
 {# templates/study_form.html #}
 {% extends "base.html" %}
 {% block content %}
+
 <section class="page-header">
   <h1>{{ "Edit Reserve Study" if edit_mode else "New Reserve Study" }}</h1>
   <p>{{ prop.name }}</p>
@@ -10,13 +11,16 @@
   <a href="{{ url_for('property_page', property_id=prop.id) }}" class="btn-outline-sm">← Back to property</a>
   <a href="{{ url_for('home') }}" class="btn-outline-sm">Home</a>
 
-  {# Only show “Back to study” for paid/locked studies #}
   {% if edit_mode and study and study.is_paid %}
     <a href="{{ url_for('study_detail', study_id=study.id) }}" class="btn-outline-sm">Back to study</a>
   {% endif %}
 </div>
 
-{% if edit_mode and study and study.is_paid %}
+{% set is_admin_user = (current_user and current_user.is_admin) %}
+{% set isLockedForUser = (edit_mode and study and study.is_paid and not is_admin_user) %}
+{% set ws = (study.workflow_status or "").lower() if study else "" %}
+
+{% if edit_mode and study and study.is_paid and not is_admin_user %}
   <div class="panel" style="margin-bottom:14px;">
     <div class="panel-header">
       <h2>Locked</h2>
@@ -28,11 +32,32 @@
   </div>
 {% endif %}
 
+{% if is_admin_user and edit_mode and study and study.is_paid %}
+  <div class="panel" style="margin-bottom:14px;">
+    <div class="panel-header">
+      <h2>Admin mode</h2>
+      <p>This study is paid, but admins can still edit.</p>
+    </div>
+
+    {% if ws in ["paid_awaiting_review", "paid_pending_admin_build"] %}
+      <div class="form-actions" style="margin-top:12px; display:flex; gap:10px; flex-wrap:wrap;">
+        <form method="post" action="{{ url_for('admin_approve', study_id=study.id) }}">
+          <button type="submit" class="btn-primary-sm">Complete &amp; approve</button>
+        </form>
+        <span style="color:var(--text-muted); font-size:13px; align-self:center;">
+          This publishes the final report to the customer’s account.
+        </span>
+      </div>
+    {% endif %}
+  </div>
+{% endif %}
+
 <section class="upload-card">
   <form class="upload-form"
         action="{{ url_for('create_study') if not edit_mode else url_for('update_study', study_id=study.id) }}"
         method="post">
     <input type="hidden" name="property_id" value="{{ prop.id }}" />
+    <input type="hidden" name="tier" value="{{ tier if tier is defined else (study.tier if study else 'essentials') }}" />
 
     <div class="forecast-layout" style="margin-top: 0;">
       <!-- Left panel -->
@@ -48,7 +73,7 @@
             <input type="number" id="start_year" name="start_year"
                    value="{{ defaults.start_year if edit_mode else '' }}"
                    placeholder="i.e. 2026"
-                   {% if edit_mode and study and study.is_paid %}disabled{% endif %} />
+                   {% if isLockedForUser %}disabled{% endif %} />
             <div class="field-help">First year in the projection.</div>
           </div>
 
@@ -57,7 +82,7 @@
             <input type="number" id="horizon_years" name="horizon_years"
                    value="{{ defaults.horizon_years if edit_mode else '' }}"
                    placeholder="i.e. 30"
-                   {% if edit_mode and study and study.is_paid %}disabled{% endif %} />
+                   {% if isLockedForUser %}disabled{% endif %} />
             <div class="field-help">How many years to model (typical: 20–30).</div>
           </div>
 
@@ -66,7 +91,7 @@
             <input type="number" step="0.0001" id="inflation_rate" name="inflation_rate"
                    value="{{ defaults.inflation_rate if edit_mode else '' }}"
                    placeholder="i.e. 0.03"
-                   {% if edit_mode and study and study.is_paid %}disabled{% endif %} />
+                   {% if isLockedForUser %}disabled{% endif %} />
             <div class="field-help">Example: <code>0.03</code> for 3%.</div>
           </div>
 
@@ -75,7 +100,7 @@
             <input type="number" step="0.0001" id="interest_rate" name="interest_rate"
                    value="{{ defaults.interest_rate if edit_mode else '' }}"
                    placeholder="i.e. 0.01"
-                   {% if edit_mode and study and study.is_paid %}disabled{% endif %} />
+                   {% if isLockedForUser %}disabled{% endif %} />
             <div class="field-help">Example: <code>0.01</code> for 1%.</div>
           </div>
 
@@ -84,7 +109,7 @@
             <input type="number" step="0.01" id="starting_balance" name="starting_balance"
                    value="{{ defaults.starting_balance if edit_mode else '' }}"
                    placeholder="i.e. 50000"
-                   {% if edit_mode and study and study.is_paid %}disabled{% endif %} />
+                   {% if isLockedForUser %}disabled{% endif %} />
             <div class="field-help">What’s currently in the reserve account.</div>
           </div>
 
@@ -93,14 +118,14 @@
             <input type="number" step="0.01" id="min_balance" name="min_balance"
                    value="{{ defaults.min_balance if edit_mode else '' }}"
                    placeholder="i.e. 0"
-                   {% if edit_mode and study and study.is_paid %}disabled{% endif %} />
+                   {% if isLockedForUser %}disabled{% endif %} />
             <div class="field-help">Use a buffer if needed.</div>
           </div>
 
           <div class="form-row" style="margin-bottom:0;">
             <label for="funding_method">Funding method</label>
             <select id="funding_method" name="funding_method"
-                    {% if edit_mode and study and study.is_paid %}disabled{% endif %}>
+                    {% if isLockedForUser %}disabled{% endif %}>
               <option value="full" {% if (defaults.funding_method or 'full') == 'full' %}selected{% endif %}>
                 Full Funding (FFB + % funded)
               </option>
@@ -110,7 +135,7 @@
           <div class="form-row" style="margin-bottom:0;">
             <label for="contribution_mode">Contribution style</label>
             <select id="contribution_mode" name="contribution_mode"
-                    {% if edit_mode and study and study.is_paid %}disabled{% endif %}>
+                    {% if isLockedForUser %}disabled{% endif %}>
               <option value="levelized" {% if (defaults.contribution_mode or 'levelized') == 'levelized' %}selected{% endif %}>
                 Levelized (one annual amount)
               </option>
@@ -129,7 +154,7 @@
 
           <div>
             <button type="button" class="btn-outline-sm" id="add-component-btn"
-                    {% if edit_mode and study and study.is_paid %}disabled{% endif %}>
+                    {% if isLockedForUser %}disabled{% endif %}>
               + Add
             </button>
           </div>
@@ -147,7 +172,7 @@
               <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:10px;">
                 <div style="font-size:12px; color: var(--text-muted);">Component</div>
                 <button type="button" class="btn-outline-sm js-remove-component" style="padding:6px 10px;"
-                        {% if edit_mode and study and study.is_paid %}disabled{% endif %}>
+                        {% if isLockedForUser %}disabled{% endif %}>
                   Delete
                 </button>
               </div>
@@ -158,7 +183,7 @@
                   <input name="component_name[]" type="text"
                          value="{{ c.name if edit_mode else (c.name or '') }}"
                          placeholder="i.e. Roof"
-                         {% if edit_mode and study and study.is_paid %}disabled{% endif %}/>
+                         {% if isLockedForUser %}disabled{% endif %}/>
                 </div>
 
                 <div class="form-row" style="margin-bottom:0;">
@@ -166,7 +191,7 @@
                   <input name="current_replacement_cost[]" type="number" step="0.01"
                          value="{{ "{:.2f}".format(c.current_replacement_cost) if (edit_mode and c.current_replacement_cost is not none) else '' }}"
                          placeholder="i.e. 180000"
-                         {% if edit_mode and study and study.is_paid %}disabled{% endif %}/>
+                         {% if isLockedForUser %}disabled{% endif %}/>
                 </div>
               </div>
 
@@ -176,7 +201,7 @@
                   <input name="quantity[]" type="number"
                          value="{{ c.quantity if edit_mode else '' }}"
                          placeholder="i.e. 1"
-                         {% if edit_mode and study and study.is_paid %}disabled{% endif %}/>
+                         {% if isLockedForUser %}disabled{% endif %}/>
                 </div>
 
                 <div class="form-row" style="margin-bottom:0;">
@@ -184,7 +209,7 @@
                   <input name="cycle_years[]" type="number"
                          value="{{ c.cycle_years if edit_mode else '' }}"
                          placeholder="i.e. 25"
-                         {% if edit_mode and study and study.is_paid %}disabled{% endif %}/>
+                         {% if isLockedForUser %}disabled{% endif %}/>
                   <div class="field-help">Usually equals Useful Life. Can differ.</div>
                 </div>
               </div>
@@ -195,7 +220,7 @@
                   <input name="useful_life_years[]" type="number"
                          value="{{ c.useful_life_years if edit_mode else '' }}"
                          placeholder="i.e. 25"
-                         {% if edit_mode and study and study.is_paid %}disabled{% endif %}/>
+                         {% if isLockedForUser %}disabled{% endif %}/>
                 </div>
 
                 <div class="form-row" style="margin-bottom:0;">
@@ -203,7 +228,7 @@
                   <input name="remaining_life_years[]" type="number"
                          value="{{ c.remaining_life_years if edit_mode else '' }}"
                          placeholder="i.e. 8"
-                         {% if edit_mode and study and study.is_paid %}disabled{% endif %}/>
+                         {% if isLockedForUser %}disabled{% endif %}/>
                 </div>
               </div>
 
@@ -217,7 +242,7 @@
                     </div>
                   </div>
 
-                  {% if not (edit_mode and study and study.is_paid) %}
+                  {% if not isLockedForUser %}
                     <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
                       <input class="js-photo-input" type="file" accept="image/*" multiple />
                     </div>
@@ -240,7 +265,7 @@
                           <div style="font-size:12px; color:var(--text-muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
                             {{ p.name or "Photo" }}
                           </div>
-                          {% if not (edit_mode and study and study.is_paid) %}
+                          {% if not isLockedForUser %}
                             <button type="button" class="btn-outline-sm js-delete-photo" style="padding:6px 10px;">Remove</button>
                           {% endif %}
                         </div>
@@ -262,7 +287,7 @@
 
     <div class="form-actions" style="margin-top: 14px; display:flex; gap:10px; flex-wrap:wrap;">
       <button type="submit" class="btn-primary-sm"
-              {% if edit_mode and study and study.is_paid %}disabled{% endif %}>
+              {% if isLockedForUser %}disabled{% endif %}>
         Save draft
       </button>
 
@@ -277,11 +302,10 @@
 
 <script>
 (function () {
-  const isLocked = {{ "true" if (edit_mode and study and study.is_paid) else "false" }};
+  const isLocked = {{ "true" if isLockedForUser else "false" }};
   if (isLocked) return;
 
   function uuidRowKey() {
-    // stable-enough row key for temp photo grouping
     return "rk_" + Math.random().toString(16).slice(2) + "_" + Date.now().toString(16);
   }
 
@@ -387,7 +411,6 @@
     const rowKeyInput = qs(rowEl, ".js-rowkey-input");
 
     if (!componentId) {
-      // temp upload requires row_key
       if (rowKeyInput && !rowKeyInput.value.trim()) {
         rowKeyInput.value = uuidRowKey();
       }
@@ -410,7 +433,6 @@
       return;
     }
 
-    // temp
     if (!propId) throw new Error("Missing property_id");
     const rowKey = (rowKeyInput?.value || "").trim();
     if (!rowKey) throw new Error("Missing row_key");
@@ -430,7 +452,6 @@
     setTimeout(() => setStatus(rowEl, ""), 1200);
   }
 
-  // AUTO-UPLOAD on choose
   document.addEventListener("change", async (e) => {
     const input = e.target;
     if (!(input instanceof HTMLInputElement)) return;
@@ -441,14 +462,13 @@
 
     try {
       await uploadFilesForRow(rowEl, input.files);
-      input.value = ""; // reset so choosing same file again still triggers change
+      input.value = "";
     } catch (err) {
       setStatus(rowEl, (err && err.message) ? err.message : "Upload failed.");
       input.value = "";
     }
   });
 
-  // Delete photo (temp or saved)
   document.addEventListener("click", async (e) => {
     const btn = e.target;
     if (!(btn instanceof HTMLElement)) return;
@@ -476,7 +496,6 @@
     }
   });
 
-  // Initial refresh for each component row (so temp photos load on edit/new)
   window.addEventListener("load", () => {
     qsa(document, ".component-row").forEach(rowEl => {
       refreshPhotos(rowEl).catch(() => {});
@@ -487,6 +506,9 @@
 
 {{ super() }}
 {% endblock %}
+
+
+
 
 
 

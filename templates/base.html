@@ -11,7 +11,6 @@
     {% block extra_head %}{% endblock %}
   </head>
 
-  {# If we are on the public marketing page, we want a totally clean canvas #}
   {% set is_marketing_home = (request.endpoint == 'kdogs_home') %}
 
   <body class="{{ 'marketing-body' if is_marketing_home else 'app-body' }}">
@@ -24,9 +23,27 @@
           </a>
         </div>
 
-        <nav class="topnav-right">
+        <nav class="topnav-right" style="display:flex; align-items:center; gap:10px;">
           {% if session.get("user_id") %}
             <a class="nav-link" href="{{ url_for('home') }}">Properties</a>
+
+            {% if current_user %}
+              <span style="font-size:12px; color: rgba(255,255,255,0.70);">
+                {{ current_user.email }}
+              </span>
+              {% if current_user.is_admin %}
+                <span style="
+                  font-size:12px;
+                  padding:4px 10px;
+                  border-radius:999px;
+                  background: rgba(44,182,255,0.18);
+                  border:1px solid rgba(44,182,255,0.45);
+                  color:#2CB6FF;
+                  font-weight:600;
+                ">Admin</span>
+              {% endif %}
+            {% endif %}
+
             <a class="nav-link" href="{{ url_for('logout') }}">Logout</a>
           {% else %}
             <a class="nav-link" href="{{ url_for('login') }}">Login</a>
@@ -64,7 +81,6 @@
       </footer>
     {% endif %}
 
-    {# Hard overrides so global styles.css can't force a dark frame around marketing #}
     <style>
       .marketing-body{
         margin: 0 !important;
@@ -81,6 +97,8 @@
     </style>
   </body>
 </html>
+
+
 
 
 

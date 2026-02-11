@@ -1,0 +1,39 @@
+
+{# templates/study_premium_pending.html #}
+{% extends "base.html" %}
+{% block content %}
+
+<section class="page-header">
+  <h1>{{ study.property.name }}</h1>
+  <p>Status: Premium — in progress</p>
+</section>
+
+<div class="panel">
+  <div class="panel-header">
+    <h2>Premium request received</h2>
+    <p>Our team will build your study and publish it to your account when it’s ready.</p>
+  </div>
+
+  <div class="form-actions" style="margin-top:12px; display:flex; gap:10px; flex-wrap:wrap;">
+    <a class="btn-outline-sm" href="{{ url_for('property_page', property_id=study.property_id) }}">Back to property</a>
+    <a class="btn-outline-sm" href="{{ url_for('home') }}">Home</a>
+  </div>
+
+  {% if current_user and current_user.is_admin %}
+    <div class="panel" style="margin-top:14px;">
+      <div class="panel-header">
+        <h2>Admin actions</h2>
+        <p>Build the study, then approve to publish.</p>
+      </div>
+      <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:12px;">
+        <a class="btn-primary-sm" href="{{ url_for('edit_study', study_id=study.id) }}">Edit study</a>
+        <form method="post" action="{{ url_for('admin_approve', study_id=study.id) }}">
+          <button type="submit" class="btn-primary-sm">Approve & publish</button>
+        </form>
+      </div>
+    </div>
+  {% endif %}
+</div>
+
+{% endblock %}
+

@@ -5,6 +5,28 @@ from flask_sqlalchemy import SQLAlchemy
 db = SQLAlchemy()
 
 
+class AuditLog(db.Model):
+    __tablename__ = "audit_logs"
+
+    id = db.Column(db.BigInteger, primary_key=True)
+
+    created_at = db.Column(db.DateTime(timezone=True), server_default=db.func.now(), nullable=False)
+
+    actor_user_id = db.Column(db.BigInteger, nullable=True, index=True)
+    actor_email = db.Column(db.Text, nullable=True)
+
+    action = db.Column(db.Text, nullable=False)
+    entity_type = db.Column(db.Text, nullable=False)
+    entity_id = db.Column(db.BigInteger, nullable=True)
+
+    meta = db.Column(db.JSON, nullable=True)
+
+    __table_args__ = (
+        db.Index("idx_audit_logs_created_at", db.text("created_at DESC")),
+        db.Index("idx_audit_logs_entity", "entity_type", "entity_id"),
+    )
+
+
 class User(db.Model):
     __tablename__ = "users"
 
@@ -51,6 +73,17 @@ class ReserveStudy(db.Model):
         db.Integer, db.ForeignKey("properties.id"), nullable=False, index=True
     )
 
+    # tier + workflow
+    tier = db.Column(db.String(40), nullable=False, default="essentials", index=True)
+
+    # workflow_status values:
+    # - draft
+    # - paid_final                 (essentials after payment)
+    # - paid_awaiting_review       (plus after payment)
+    # - approved_final             (plus after admin approves; also legacy paid)
+    # - paid_pending_admin_build   (premium after payment; admins build)
+    workflow_status = db.Column(db.String(60), nullable=False, default="draft", index=True)
+
     start_year = db.Column(db.Integer, nullable=False)
     horizon_years = db.Column(db.Integer, nullable=False)
 
@@ -65,7 +98,7 @@ class ReserveStudy(db.Model):
 
     recommended_annual_contribution = db.Column(db.Float, nullable=True)
 
-    # "draft" -> "paid"
+    # legacy: keep for compatibility
     paid_status = db.Column(db.String(30), nullable=False, default="draft", index=True)
 
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
@@ -79,7 +112,14 @@ class ReserveStudy(db.Model):
 
     @property
     def is_paid(self) -> bool:
+        ws = (self.workflow_status or "").lower()
+        if ws in ("paid_final", "paid_awaiting_review", "approved_final", "paid_pending_admin_build"):
+            return True
         return (self.paid_status or "").lower() == "paid"
+
+    @property
+    def is_approved(self) -> bool:
+        return (self.workflow_status or "").lower() == "approved_final"
 
 
 class ReserveComponent(db.Model):
@@ -162,7 +202,6 @@ class TempComponentPhoto(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False, index=True)
     property_id = db.Column(db.Integer, db.ForeignKey("properties.id"), nullable=False, index=True)
 
-    # client-generated stable key for a component row BEFORE it exists in DB
     row_key = db.Column(db.String(80), nullable=False, index=True)
 
     storage_key = db.Column(db.String(600), nullable=False, index=True)
@@ -174,6 +213,25 @@ class TempComponentPhoto(db.Model):
     __table_args__ = (
         db.Index("ix_temp_photo_user_prop_row", "user_id", "property_id", "row_key"),
     )
+
+
+class PremiumRequest(db.Model):
+    __tablename__ = "premium_requests"
+
+    id = db.Column(db.BigInteger, primary_key=True)
+    created_at = db.Column(db.DateTime(timezone=True), server_default=db.func.now(), nullable=False)
+
+    user_id = db.Column(db.BigInteger, db.ForeignKey("users.id"), nullable=False, index=True)
+    property_id = db.Column(db.BigInteger, db.ForeignKey("properties.id"), nullable=False, index=True)
+
+    paid = db.Column(db.Boolean, nullable=False, default=False)
+    paid_amount_cents = db.Column(db.Integer, nullable=False, default=0)
+
+    scheduled_at = db.Column(db.DateTime(timezone=True), nullable=True)
+    status = db.Column(db.Text, nullable=False, default="created")  # created | paid_pending_schedule | scheduled | completed
+    meta = db.Column(db.JSON, nullable=True)
+
+
 
 
 
