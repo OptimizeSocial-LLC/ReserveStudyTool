@@ -519,9 +519,6 @@
 
   /* =========================
      MOBILE — hero stack
-     Fixes:
-       - left-align BOTH hero title slab + hero paragraph (no centered text box)
-       - remove awkward "quality" orphan by disabling forced <br> in that H2 on small screens
      ========================= */
   @media (max-width: 980px){
     /* header */
@@ -548,12 +545,9 @@
       padding-right: 0;
       min-height: auto;
       justify-content: flex-start;
-
-      /* CHANGED: don't center the whole block; let it align left like the comp */
       align-items: stretch;
       gap: 0;
-
-      margin-top: -26px; /* pulls the title slab up into the image */
+      margin-top: -26px;
     }
 
     .hero-card{
@@ -567,7 +561,6 @@
       border-radius: 30px;
     }
 
-    /* one slab like the comp */
     .hero-title{
       font-size: 44px;
       line-height: 52px;
@@ -591,10 +584,7 @@
       margin-top: 18px;
       width: calc(100% - 24px);
       max-width: 520px;
-
-      /* CHANGED: left-align the paragraph box to match the title box */
       text-align: left;
-
       margin-left: auto;
       margin-right: auto;
     }
@@ -602,8 +592,6 @@
       font-size: 22px;
       line-height: 30px;
       max-width: 520px;
-
-      /* keep it left aligned; no auto-centering needed */
       margin: 0;
     }
 
@@ -612,12 +600,11 @@
       max-width: 520px;
       display:flex;
 
-      /* optional: keep CTA aligned with left edge of text */
-      justify-content: flex-start;
+      /* CHANGED: center the button on mobile */
+      justify-content:center;
 
       margin-top: 18px;
       padding-bottom: 0;
-
       margin-left: auto;
       margin-right: auto;
     }
@@ -629,7 +616,6 @@
       border-radius: 12px;
     }
 
-    /* other layout stacking */
     .value-grid{ grid-template-columns: 1fr; }
   }
 
@@ -637,7 +623,7 @@
     .trio{ grid-template-columns: 1fr; }
     .band h2, .value h2, .pricing h2{ font-size: 34px; line-height: 44px; }
 
-    /* FIX: remove forced line break so "quality" doesn't get stranded */
+    /* remove forced line break so "quality" doesn't get stranded */
     .value h2 br{ display:none; }
 
     .tier{ grid-template-columns: 1fr; }
@@ -795,7 +781,7 @@
         </div>
 
         <div>
-          <h2 class="asar">Save time and get quality<br/> with Rapid Reserve.</h2>
+          <h2 class="asar">Save time and get quality<br/>with Rapid Reserve.</h2>
 
           <div class="value-cards">
             <div class="mini-card">
@@ -962,6 +948,7 @@
 </script>
 
 {% endblock %}
+
 
 
 
