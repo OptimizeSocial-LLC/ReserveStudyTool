@@ -11,7 +11,14 @@
     {% block extra_head %}{% endblock %}
   </head>
 
-  {% set is_marketing_home = (request.endpoint == 'kdogs_home') %}
+  {# Treat marketing + auth pages as "no chrome" pages (no topnav/footer, full white) #}
+  {% set is_marketing_home = (
+    request.endpoint == 'kdogs_home'
+    or request.endpoint == 'login'
+    or request.endpoint == 'signup'
+    or request.endpoint == 'login_post'
+    or request.endpoint == 'signup_post'
+  ) %}
 
   <body class="{{ 'marketing-body' if is_marketing_home else 'app-body' }}">
     {% if not is_marketing_home %}
@@ -97,6 +104,7 @@
     </style>
   </body>
 </html>
+
 
 
 

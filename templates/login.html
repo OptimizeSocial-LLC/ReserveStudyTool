@@ -1,52 +1,207 @@
 {% extends "base.html" %}
 {% block content %}
-<section class="page-header">
-  <h1>Login</h1>
-  <p>Sign in to access your properties and studies.</p>
-</section>
 
-<div class="panel" style="max-width:520px;">
-  <form class="upload-form" method="post" action="{{ url_for('login_post') }}" autocomplete="off">
-    <input type="hidden" name="next_url" value="{{ next_url }}" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Asar&family=Montserrat:ital,wght@0,400;0,500;0,700;1,400&display=swap" rel="stylesheet">
 
-    {# Browser autofill killers #}
-    <input type="text" name="fake_user" style="display:none" autocomplete="username" />
-    <input type="password" name="fake_pass" style="display:none" autocomplete="new-password" />
+<style>
+  :root{
+    --navy:#004F7F;
+    --sky:#2CB6FF;
+    --bg:#ffffff;
 
-    <div class="form-row">
-      <label for="username">Email</label>
-      <input
-        id="username"
-        name="username"
-        type="email"
-        autocomplete="off"
-        autocapitalize="none"
-        spellcheck="false"
-        required
-        value=""
-      />
-    </div>
+    --cardRadius: 31px;
+    --inputRadius: 11px;
+    --btnRadius: 9px;
 
-    <div class="form-row">
-      <label for="password">Password</label>
-      <input
-        id="password"
-        name="password"
-        type="password"
-        autocomplete="off"
-        required
-        value=""
-      />
-    </div>
+    --cardBorder: 1px solid rgba(0, 79, 127, 0.50);
+    --inputBorder: 1px solid rgba(30, 30, 30, 0.25);
+  }
 
-    <div class="form-actions" style="margin-top:14px; display:flex; gap:12px; align-items:center;">
-      <button type="submit" class="btn-primary-sm">Log in</button>
-      <div style="opacity:.8;">
-        Don’t have an account?
-        <a href="{{ url_for('signup') }}">Create one</a>
+  .auth-wrap{
+    min-height: calc(100vh - 40px);
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    background: var(--bg);
+    padding: 40px 16px 60px;
+    box-sizing: border-box;
+  }
+
+  .auth-logo{
+    width: 321px;
+    height: auto;
+    margin-top: 6px;
+    margin-bottom: 34px;
+    display: block;
+  }
+
+  .auth-card{
+    width: 507px;
+    max-width: 92vw;
+    background: #fff;
+    border-radius: var(--cardRadius);
+    border: var(--cardBorder);
+    padding: 28px 48px 34px;
+    box-sizing: border-box;
+  }
+
+  .auth-title{
+    text-align: center;
+    color: var(--navy);
+    font-family: "Asar", serif;
+    font-weight: 400;
+    font-size: 40px;
+    line-height: 50px;
+    margin: 0 0 8px 0;
+  }
+
+  .auth-subtitle{
+    text-align: center;
+    color: var(--navy);
+    font-family: "Montserrat", sans-serif;
+    font-weight: 400;
+    font-size: 14px;
+    line-height: 26px;
+    margin: 0 0 18px 0;
+  }
+
+  .auth-row{ margin-top: 14px; }
+
+  .auth-label{
+    display: block;
+    color: var(--navy);
+    font-family: "Montserrat", sans-serif;
+    font-weight: 400;
+    font-size: 16px;
+    line-height: 26px;
+    margin-bottom: 6px;
+  }
+
+  .auth-input{
+    width: 100%;
+    height: 52px;
+    border-radius: var(--inputRadius);
+    border: var(--inputBorder);
+    background: #fff;
+    padding: 10px 14px;
+    box-sizing: border-box;
+    font-family: "Montserrat", sans-serif;
+    font-size: 16px;
+    outline: none;
+  }
+
+  .auth-input:focus{
+    border-color: rgba(0, 79, 127, 0.55);
+    box-shadow: 0 0 0 3px rgba(44, 182, 255, 0.20);
+  }
+
+  .auth-linkline{
+    margin-top: 14px;
+    text-align: center;
+    color: var(--navy);
+    font-family: "Montserrat", sans-serif;
+    font-style: italic;
+    font-weight: 400;
+    font-size: 14px;
+    line-height: 26px;
+  }
+
+  .auth-linkline a{
+    color: var(--navy);
+    text-decoration: underline;
+  }
+
+  .auth-btnwrap{
+    margin-top: 18px;
+    display: flex;
+    justify-content: center;
+  }
+
+  .auth-btn{
+    width: 226px;
+    height: 43px;
+    border: none;
+    border-radius: var(--btnRadius);
+    background: var(--sky);
+    color: var(--navy);
+    font-family: "Montserrat", sans-serif;
+    font-weight: 500;
+    font-size: 18px;
+    line-height: 26px;
+    cursor: pointer;
+  }
+
+  .auth-btn:hover{ filter: brightness(0.98); }
+  .auth-btn:active{ transform: translateY(1px); }
+
+  @media (max-width: 520px){
+    .auth-card{ padding: 22px 18px 28px; }
+    .auth-logo{ width: 260px; margin-bottom: 26px; }
+  }
+</style>
+
+<div class="auth-wrap">
+
+  <img
+    class="auth-logo"
+    src="{{ url_for('static', filename='Rapid Reserve Homepage_img/Rapid Reserve Study logo 1.png') }}"
+    alt="Rapid Reserve Study"
+  />
+
+  <div class="auth-card">
+
+    <h1 class="auth-title">Sign In</h1>
+    <p class="auth-subtitle">Sign in to access your properties and studies.</p>
+
+    <form method="post" action="{{ url_for('login_post') }}" autocomplete="off">
+      <input type="hidden" name="next_url" value="{{ next_url }}" />
+
+      {# Browser autofill killers #}
+      <input type="text" name="fake_user" style="display:none" autocomplete="username" />
+      <input type="password" name="fake_pass" style="display:none" autocomplete="new-password" />
+
+      <div class="auth-row">
+        <label class="auth-label" for="username">Email</label>
+        <input
+          class="auth-input"
+          id="username"
+          name="username"
+          type="email"
+          autocomplete="off"
+          autocapitalize="none"
+          spellcheck="false"
+          required
+          value=""
+        />
       </div>
-    </div>
-  </form>
+
+      <div class="auth-row">
+        <label class="auth-label" for="password">Password</label>
+        <input
+          class="auth-input"
+          id="password"
+          name="password"
+          type="password"
+          autocomplete="off"
+          required
+          value=""
+        />
+      </div>
+
+      <div class="auth-linkline">
+        Don’t have an account? <a href="{{ url_for('signup') }}">Create one.</a>
+      </div>
+
+      <div class="auth-btnwrap">
+        <button class="auth-btn" type="submit">SUBMIT</button>
+      </div>
+    </form>
+
+  </div>
 </div>
 
 <script>
@@ -58,7 +213,9 @@
     if (p) p.value = "";
   });
 </script>
+
 {% endblock %}
+
 
 
 

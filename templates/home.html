@@ -1,164 +1,558 @@
 {% extends "base.html" %}
 {% block content %}
 
-<section class="page-header">
-  <h1>Reserve Study Tool</h1>
-  <p>Create a property, run a reserve study, download a report, and reuse prior data via cloning.</p>
-</section>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Asar&family=Montserrat:ital,wght@0,400;0,500;0,700;1,400&display=swap" rel="stylesheet">
 
-<div class="panel" style="margin-bottom:18px;">
-  <div class="panel-header">
-    <h2>Create a property</h2>
+<style>
+  :root{
+    --navy:#004F7F;
+    --sky:#2CB6FF;
+    --ice:#E9F8FF;
+    --bg:#ffffff;
+
+    --borderNavy50: rgba(0, 79, 127, 0.50);
+    --borderDark25: rgba(30, 30, 30, 0.25);
+
+    --cardRadius: 31px;
+    --inputRadius: 11px;
+    --btnRadius: 9px;
+  }
+
+  /* Hide base chrome so this page can match the designer layout */
+  header.topnav{ display:none !important; }
+  footer.page-footer{ display:none !important; }
+  .flash-container{ display:none !important; }
+
+  /* Neutralize base main container constraints */
+  main.main-content{
+    max-width: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    background: var(--bg) !important;
+  }
+
+  body.app-body{
+    background: var(--bg) !important;
+  }
+
+  .dash{
+    width: 100%;
+    background: var(--bg);
+  }
+
+  /* Top header */
+  .dash-topbar{
+    width: 100%;
+    height: 112px;
+    background: var(--ice);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 56px;
+    box-sizing: border-box;
+  }
+
+  .dash-brand{
+    display:flex;
+    align-items:center;
+    gap: 18px;
+  }
+
+  .dash-logo{
+    width: 321px;
+    height: auto;
+    display:block;
+  }
+
+  .dash-actions{
+    display:flex;
+    align-items:center;
+    gap: 16px;
+    font-family: "Montserrat", sans-serif;
+    color: var(--navy);
+    white-space: nowrap;
+  }
+
+  /* Make MY ACCOUNT and SIGN OUT same font/size/weight */
+  .dash-actions .myacct{
+    font-family: "Montserrat", sans-serif;
+    font-size: 16px;
+    font-weight: 400;
+    line-height: 26px;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    color: var(--navy);
+    opacity: 0.95;
+    margin-right: 10px;
+  }
+
+  .dash-actions .signout{
+    font-family: "Montserrat", sans-serif;
+    font-size: 16px;
+    font-weight: 400;
+    line-height: 26px;
+    text-transform: uppercase;
+
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+
+    height: 36px;
+    padding: 0 22px;
+    border-radius: var(--btnRadius);
+    border: 1px solid var(--sky);
+    color: var(--navy);
+    text-decoration: none;
+    background: transparent;
+  }
+
+  .dash-actions .signout:hover{ filter: brightness(0.98); }
+  .dash-actions .signout:active{ transform: translateY(1px); }
+
+  /* Admin flag (only show for admins) */
+  .admin-pill{
+    font-family: "Montserrat", sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 18px;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+
+    height: 24px;
+    padding: 0 10px;
+    border-radius: 999px;
+
+    background: rgba(44, 182, 255, 0.18);
+    border: 1px solid rgba(44, 182, 255, 0.45);
+    color: var(--navy);
+    margin-right: 6px;
+  }
+
+  /* Announcement bar */
+  .dash-announcement{
+    width: 100%;
+    min-height: 49px;
+    background: var(--navy);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding: 10px 18px;
+    box-sizing: border-box;
+  }
+
+  .dash-announcement .msg{
+    font-family: "Montserrat", sans-serif;
+    font-size: 16px;
+    line-height: 26px;
+    color: #ffffff;
+    text-align:center;
+    max-width: 1200px;
+  }
+
+  .dash-content{
+    width: 100%;
+    padding: 40px 56px 70px;
+    box-sizing: border-box;
+  }
+
+  .dash-grid{
+    display:grid;
+    grid-template-columns: 445px 724px;
+    gap: 42px;
+    justify-content: center;
+    align-items: start;
+  }
+
+  .card{
+    background:#fff;
+    border-radius: var(--cardRadius);
+    border: 1px solid var(--borderNavy50);
+    padding: 28px 48px 34px;
+    box-sizing: border-box;
+  }
+
+  .card-title{
+    color: var(--navy);
+    font-family: "Asar", serif;
+    font-weight: 400;
+    font-size: 40px;
+    line-height: 50px;
+    margin: 0 0 14px 0;
+  }
+
+  .card-subtitle{
+    color: var(--navy);
+    font-family: "Montserrat", sans-serif;
+    font-style: italic;
+    font-weight: 400;
+    font-size: 16px;
+    line-height: 26px;
+    margin: -4px 0 16px 0;
+  }
+
+  .field{ margin-top: 14px; }
+
+  .label{
+    display:block;
+    color: var(--navy);
+    font-family: "Montserrat", sans-serif;
+    font-weight: 400;
+    font-size: 16px;
+    line-height: 26px;
+    margin-bottom: 6px;
+  }
+
+  /* HARD OVERRIDES to prevent black inputs from global styles.css */
+  .input{
+    width: 100%;
+    height: 52px;
+
+    border-radius: var(--inputRadius);
+    border: 1px solid var(--borderDark25) !important;
+
+    background: #ffffff !important;   /* <-- kills black */
+    color: var(--navy) !important;     /* <-- kills white/gray text */
+
+    padding: 10px 14px;
+    box-sizing: border-box;
+
+    font-family: "Montserrat", sans-serif !important;
+    font-size: 16px !important;
+
+    outline: none;
+    -webkit-text-fill-color: var(--navy) !important;
+    appearance: none;
+  }
+
+  .input::placeholder{
+    color: rgba(0,79,127,0.60) !important;
+    opacity: 1 !important;
+  }
+
+  .input:focus{
+    border-color: rgba(0, 79, 127, 0.55) !important;
+    box-shadow: 0 0 0 3px rgba(44, 182, 255, 0.20) !important;
+  }
+
+  .btn-primary{
+    width: 226px;
+    height: 43px;
+    border: none;
+    border-radius: var(--btnRadius);
+    background: var(--sky);
+    color: var(--navy);
+    font-family: "Montserrat", sans-serif;
+    font-weight: 500;
+    font-size: 18px;
+    line-height: 26px;
+    cursor:pointer;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    text-decoration:none;
+  }
+  .btn-primary:active{ transform: translateY(1px); }
+
+  .btn-outline-xs{
+    height: 25px;
+    padding: 0 12px;
+    border-radius: var(--btnRadius);
+    border: 1px solid var(--sky);
+    background:#fff;
+    color: var(--navy);
+    font-family: "Montserrat", sans-serif;
+    font-weight: 500;
+    font-size: 12px;
+    line-height: 26px;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    text-decoration:none;
+    white-space:nowrap;
+  }
+
+  .btn-outline-sm{
+    height: 26px;
+    padding: 0 16px;
+    border-radius: var(--btnRadius);
+    border: 1px solid var(--sky);
+    background:#fff;
+    color: var(--navy);
+    font-family: "Montserrat", sans-serif;
+    font-weight: 500;
+    font-size: 12px;
+    line-height: 26px;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    text-decoration:none;
+    white-space:nowrap;
+  }
+
+  .section-label{
+    margin-top: 18px;
+    color: var(--navy);
+    font-family: "Montserrat", sans-serif;
+    font-weight: 700;
+    font-size: 16px;
+    line-height: 26px;
+  }
+
+  .matches{
+    margin-top: 12px;
+    display:flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .matches .small{
+    color: var(--navy);
+    font-family: "Montserrat", sans-serif;
+    font-style: italic;
+    font-weight: 400;
+    font-size: 14px;
+    line-height: 26px;
+  }
+
+  .table-wrap{ margin-top: 14px; }
+
+  .prop-table{
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .prop-table thead th{
+    text-align:left;
+    color: var(--navy);
+    font-family: "Montserrat", sans-serif;
+    font-weight: 700;
+    font-size: 16px;
+    line-height: 26px;
+    padding: 6px 0;
+  }
+
+  .prop-table tbody td{
+    padding: 6px 0;
+    color: var(--navy);
+    font-family: "Montserrat", sans-serif;
+    font-weight: 400;
+    font-size: 16px;
+    line-height: 26px;
+    vertical-align: middle;
+  }
+
+  .col-actions{
+    text-align:right;
+    width: 120px;
+    padding-left: 12px;
+  }
+
+  .col-review{
+    width: 190px;
+    padding-left: 18px;
+  }
+
+  .needs-pill{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 110, 110, 0.35);
+    background: rgba(255, 110, 110, 0.10);
+    color: rgba(160, 10, 10, 0.95);
+    font-family: "Montserrat", sans-serif;
+    font-weight: 700;
+    font-size: 12px;
+    letter-spacing: 0.02em;
+    line-height: 18px;
+    white-space: nowrap;
+  }
+
+  .needs-count{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    min-width:22px;
+    height:18px;
+    padding:0 6px;
+    border-radius:999px;
+    border:1px solid rgba(0,0,0,0.10);
+    background: rgba(0,0,0,0.06);
+    font-weight: 800;
+    color: rgba(120, 0, 0, 0.85);
+  }
+
+  .showmore-wrap{
+    display:flex;
+    justify-content:center;
+    margin-top: 22px;
+  }
+
+  /* Responsive */
+  @media (max-width: 1320px){
+    .dash-grid{
+      grid-template-columns: 1fr;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+    .card{ width: 100%; }
+    .dash-topbar{ padding: 0 22px; }
+    .dash-content{ padding: 30px 22px 60px; }
+    .dash-logo{ width: 260px; }
+  }
+
+  @media (max-width: 520px){
+    .dash-actions .myacct{ font-size: 14px; }
+    .dash-actions .signout{ font-size: 14px; }
+  }
+</style>
+
+<div class="dash">
+
+  <!-- Light top bar -->
+  <div class="dash-topbar">
+    <div class="dash-brand">
+      <img
+        class="dash-logo"
+        src="{{ url_for('static', filename='Rapid Reserve Homepage_img/Rapid Reserve Study logo 1.png') }}"
+        alt="Rapid Reserve Study"
+      />
+    </div>
+
+    <div class="dash-actions">
+      {% if current_user and current_user.is_admin %}
+        <span class="admin-pill">ADMIN</span>
+      {% endif %}
+
+      <div class="myacct">MY ACCOUNT</div>
+      <a class="signout" href="{{ url_for('logout') }}">SIGN OUT</a>
+    </div>
   </div>
 
-  <form method="post" action="{{ url_for('create_property') }}" style="margin-top:12px;">
-    <div style="display:grid; grid-template-columns: 1fr; gap:12px;">
-
-      <div class="form-row" style="margin-bottom:0;">
-        <label>Property name (required)</label>
-        <input name="name" type="text" placeholder="Property name (required)" required />
-      </div>
-
-      <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
-        <div class="form-row" style="margin-bottom:0;">
-          <label>City</label>
-          <input name="city" type="text" placeholder="City" />
-        </div>
-
-        <div class="form-row" style="margin-bottom:0;">
-          <label>State</label>
-          <input name="state" type="text" placeholder="State" />
-        </div>
-      </div>
-
-      <div class="form-row" style="margin-bottom:0;">
-        <label>Address</label>
-        <input name="address" type="text" placeholder="Address" />
-      </div>
-
-      <div class="form-actions" style="margin-top:4px;">
-        <button type="submit" class="btn-primary-sm">Create property</button>
-      </div>
-
+  <!-- Dark announcement bar (uses flashed messages if present) -->
+  <div class="dash-announcement">
+    <div class="msg">
+      {% with messages = get_flashed_messages() %}
+        {% if messages %}
+          {{ messages[-1] }}
+        {% else %}
+          &nbsp;
+        {% endif %}
+      {% endwith %}
     </div>
-  </form>
-</div>
-
-<div class="panel">
-  <div class="panel-header">
-    <h2>Properties</h2>
-    <p>Open a property to view history and run new studies.</p>
   </div>
 
-  <div style="margin-top:12px;">
+  <div class="dash-content">
+    <div class="dash-grid">
 
-    <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;">
-      <div style="flex:1; min-width:260px;">
-        <div style="font-weight:600; margin-bottom:6px;">Search properties</div>
-        <input id="propSearch" type="text" placeholder="Type a company/property name…" />
-        <div style="font-size:13px; color:var(--text-muted); margin-top:6px;">
-          Search matches name or location.
+      <!-- LEFT: Create a Property -->
+      <div class="card">
+        <h2 class="card-title">Create a Property</h2>
+
+        <form method="post" action="{{ url_for('create_property') }}" style="margin-top: 6px;">
+          <div class="field">
+            <label class="label" for="propName">Property name (required)</label>
+            <input class="input" id="propName" name="name" type="text" required />
+          </div>
+
+          <div class="field">
+            <label class="label" for="propCity">City</label>
+            <input class="input" id="propCity" name="city" type="text" />
+          </div>
+
+          <div class="field">
+            <label class="label" for="propState">State</label>
+            <input class="input" id="propState" name="state" type="text" />
+          </div>
+
+          <div class="field">
+            <label class="label" for="propAddress">Address</label>
+            <input class="input" id="propAddress" name="address" type="text" />
+          </div>
+
+          <div style="display:flex; justify-content:center; margin-top: 22px;">
+            <button type="submit" class="btn-primary">CREATE PROPERTY</button>
+          </div>
+        </form>
+      </div>
+
+      <!-- RIGHT: Existing Properties -->
+      <div class="card">
+        <h2 class="card-title">Existing Properties</h2>
+        <div class="card-subtitle">Open a property to view history and run new studies.</div>
+
+        <div class="section-label">Search Your Properties</div>
+        <input class="input" id="propSearch" type="text" placeholder="Type a property name or location..." />
+
+        <div class="matches">
+          <div class="section-label" style="margin-top: 14px;">Search Matches</div>
+          <div class="small"><span id="countShown">0</span> of <span id="countTotal">0</span> shown</div>
         </div>
-      </div>
 
-      <div style="color:var(--text-muted); font-size:13px; white-space:nowrap;">
-        <span id="countShown">0</span> of <span id="countTotal">0</span> shown
-      </div>
-    </div>
+        <div class="table-wrap">
+          <table class="prop-table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Location</th>
 
-    <div style="overflow:auto; margin-top:12px;">
-      <table class="table" style="width:100%; border-collapse:collapse; min-width:860px;">
+                {% if current_user and current_user.is_admin %}
+                  <th class="col-review">Needs review</th>
+                {% endif %}
 
-        <colgroup>
-          <col style="width:34%;">
-          <col style="width:34%;">
-          {% if current_user and current_user.is_admin %}
-            <col style="width:18%;">
-          {% endif %}
-          <col style="width:14%;">
-        </colgroup>
+                <th class="col-actions"></th>
+              </tr>
+            </thead>
 
-        <thead>
-          <tr>
-            <th style="text-align:left; padding:10px 12px;">Name</th>
-            <th style="text-align:left; padding:10px 12px;">Location</th>
+            <tbody id="propsTbody">
+              {% for row in properties_view %}
+                {% set p = row.prop %}
+                {% set loc = ((p.city or '') ~ (', ' if p.city and p.state else '') ~ (p.state or '')) %}
 
-            {% if current_user and current_user.is_admin %}
-              <th style="text-align:left; padding:10px 12px;">Needs review</th>
-            {% endif %}
+                <tr class="propRow"
+                    data-name="{{ (p.name or '')|lower }}"
+                    data-loc="{{ loc|lower }}"
+                    data-needs-review="{{ '1' if row.needs_review else '0' }}">
 
-            <th style="text-align:right; padding:10px 12px;"></th>
-          </tr>
-        </thead>
+                  <td>{{ p.name }}</td>
 
-        <tbody id="propsTbody">
-          {% for row in properties_view %}
-            {% set p = row.prop %}
-            {% set loc = ((p.city or '') ~ (', ' if p.city and p.state else '') ~ (p.state or '')) %}
+                  <td>{{ loc if loc.strip() else "—" }}</td>
 
-            <tr class="propRow"
-                data-name="{{ (p.name or '')|lower }}"
-                data-loc="{{ loc|lower }}"
-                data-needs-review="{{ '1' if row.needs_review else '0' }}">
-
-              <td style="padding:12px; font-weight:600;">
-                {{ p.name }}
-              </td>
-
-              <td style="padding:12px; color:var(--text-muted);">
-                {{ loc if loc.strip() else "—" }}
-              </td>
-
-              {% if current_user and current_user.is_admin %}
-                <td style="padding:12px;">
-
-                  {% if row.needs_review %}
-                    <span style="
-                      display:inline-flex;
-                      align-items:center;
-                      gap:8px;
-                      padding:6px 10px;
-                      border-radius:999px;
-                      border:1px solid rgba(255, 110, 110, 0.35);
-                      background: rgba(255, 110, 110, 0.10);
-                      color: rgba(255, 220, 220, 0.95);
-                      font-size:12px;
-                      font-weight:700;
-                      letter-spacing:0.02em;">
-
-                      Needs review
-
-                      <span style="
-                        display:inline-flex;
-                        align-items:center;
-                        justify-content:center;
-                        min-width:22px;
-                        height:18px;
-                        padding:0 6px;
-                        border-radius:999px;
-                        border:1px solid rgba(255,255,255,0.14);
-                        background: rgba(0,0,0,0.20);
-                        font-weight:800;">
-                        {{ row.pending_count }}
-                      </span>
-
-                    </span>
-                  {% else %}
-                    <span style="color:var(--text-muted); font-size:13px;">—</span>
+                  {% if current_user and current_user.is_admin %}
+                    <td class="col-review">
+                      {% if row.needs_review %}
+                        <span class="needs-pill">
+                          Needs review
+                          <span class="needs-count">{{ row.pending_count }}</span>
+                        </span>
+                      {% else %}
+                        <span style="opacity:.55; font-size:14px;">—</span>
+                      {% endif %}
+                    </td>
                   {% endif %}
 
-                </td>
-              {% endif %}
+                  <td class="col-actions">
+                    <a class="btn-outline-xs" href="{{ url_for('property_page', property_id=p.id) }}">SELECT</a>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
 
-              <td style="padding:12px; text-align:right;">
-                <a class="btn-outline-sm" href="{{ url_for('property_page', property_id=p.id) }}">Open</a>
-              </td>
+          <div class="showmore-wrap">
+            <button id="showMoreBtn" class="btn-outline-sm" type="button">SHOW MORE</button>
+          </div>
+        </div>
 
-            </tr>
-          {% endfor %}
-        </tbody>
+      </div>
 
-      </table>
     </div>
   </div>
 </div>
@@ -170,30 +564,82 @@
   const rows = Array.from(tbody.querySelectorAll(".propRow"));
   const countShown = document.getElementById("countShown");
   const countTotal = document.getElementById("countTotal");
+  const showMoreBtn = document.getElementById("showMoreBtn");
+
+  const INITIAL_LIMIT = 10;
+  let limit = Math.min(INITIAL_LIMIT, rows.length);
 
   countTotal.textContent = String(rows.length);
 
   function applyFilter(){
     const q = (search.value || "").trim().toLowerCase();
-    let shown = 0;
+    let filtered = [];
 
     rows.forEach(r => {
       const name = r.dataset.name || "";
       const loc = r.dataset.loc || "";
       const match = (!q) || name.includes(q) || loc.includes(q);
+      if (match) filtered.push(r);
       r.style.display = match ? "" : "none";
-      if (match) shown++;
     });
 
-    countShown.textContent = String(shown);
+    // When searching, show all matches
+    if (q){
+      countShown.textContent = String(filtered.length);
+      if (showMoreBtn) showMoreBtn.style.display = "none";
+      return;
+    }
+
+    // When not searching, limit results w/ Show More
+    if (filtered.length > INITIAL_LIMIT){
+      filtered.forEach((r, idx) => {
+        r.style.display = (idx < limit) ? "" : "none";
+      });
+      countShown.textContent = String(Math.min(limit, filtered.length));
+      if (showMoreBtn){
+        showMoreBtn.style.display = "";
+        showMoreBtn.textContent = (limit >= filtered.length) ? "SHOW LESS" : "SHOW MORE";
+      }
+    } else {
+      countShown.textContent = String(filtered.length);
+      if (showMoreBtn) showMoreBtn.style.display = "none";
+    }
+  }
+
+  function toggleShowMore(){
+    const q = (search.value || "").trim().toLowerCase();
+    if (q) return;
+
+    // compute current filtered length
+    const filtered = rows.filter(r => {
+      const name = r.dataset.name || "";
+      const loc = r.dataset.loc || "";
+      return name.includes(q) || loc.includes(q) || !q;
+    });
+
+    if (limit >= filtered.length){
+      limit = Math.min(INITIAL_LIMIT, filtered.length);
+    } else {
+      limit = filtered.length;
+    }
+    applyFilter();
   }
 
   applyFilter();
-  search.addEventListener("input", applyFilter);
+  search.addEventListener("input", () => {
+    limit = Math.min(INITIAL_LIMIT, rows.length);
+    applyFilter();
+  });
+
+  if (showMoreBtn){
+    showMoreBtn.addEventListener("click", toggleShowMore);
+  }
 })();
 </script>
 
 {% endblock %}
+
+
 
 
 
