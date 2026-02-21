@@ -1,4 +1,4 @@
-{# templates/property_page.html #}
+{# templates/property.html #}
 {% extends "base.html" %}
 {% block content %}
 
@@ -42,7 +42,7 @@
     display: grid;
     grid-template-columns: 1.05fr 1.35fr;
     gap: 26px;
-    align-items: start; /* ✅ keep customer layout EXACT */
+    align-items: start;
   }
   @media (max-width: 980px){
     .rs-grid{ grid-template-columns: 1fr; }
@@ -83,7 +83,7 @@
     gap: 10px;
     align-items: center;
   }
-  .rs-tier + .rs-tier{ margin-top: 14px; } /* ✅ keep original spacing */
+  .rs-tier + .rs-tier{ margin-top: 14px; }
 
   .rs-tier-label{
     font-family: Montserrat, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
@@ -211,6 +211,16 @@
     justify-content:center;
   }
 
+  /* ✅ Pending review list: collapse nicely, only show button if overflow */
+  .rs-pending-list{
+    max-height: 210px;
+    overflow: hidden;
+  }
+  .rs-pending-list.is-expanded{
+    max-height: none;
+    overflow: visible;
+  }
+
   /* ✅ Completed studies list: collapse nicely, only show button if overflow */
   .rs-completed-list{
     max-height: 210px;
@@ -224,7 +234,6 @@
   /* ✅ Admin behavior:
      - hide entire left panel
      - make grid one column so right side is full width
-     (Customer view remains unchanged.)
   */
   {% if current_user and current_user.is_admin %}
     .rs-grid{
@@ -348,12 +357,18 @@
         <div class="rs-meta-title">Date Created</div>
 
         {% if pending_review and pending_review|length %}
-          {% for s in pending_review %}
-            <div class="rs-row">
-              <div class="rs-date">{{ s.created_at.date() }}</div>
-              <a class="rs-btn rs-btn-outline" href="{{ url_for('study_detail', study_id=s.id) }}">View Status</a>
-            </div>
-          {% endfor %}
+          <div id="pendingList" class="rs-pending-list">
+            {% for s in pending_review %}
+              <div class="rs-row pendingRow">
+                <div class="rs-date">{{ s.created_at.date() }}</div>
+                <a class="rs-btn rs-btn-outline" href="{{ url_for('study_detail', study_id=s.id) }}">View Status</a>
+              </div>
+            {% endfor %}
+          </div>
+
+          <div class="rs-showmore" id="pendingShowMoreWrap" style="display:none;">
+            <button id="pendingShowMoreBtn" class="rs-btn rs-btn-outline" type="button">Show More</button>
+          </div>
         {% else %}
           <div style="margin-top:10px; font-family:Montserrat,system-ui; font-size:13px; color:var(--rs-muted);">
             No studies awaiting review.
@@ -393,50 +408,101 @@
 
 <script>
 (function(){
-  const list = document.getElementById("completedList");
-  const wrap = document.getElementById("completedShowMoreWrap");
-  const btn  = document.getElementById("completedShowMoreBtn");
+  /* ============================
+     Pending Review Show More
+  ============================ */
+  const pendingList = document.getElementById("pendingList");
+  const pendingWrap = document.getElementById("pendingShowMoreWrap");
+  const pendingBtn  = document.getElementById("pendingShowMoreBtn");
 
-  if (!list || !wrap || !btn) return;
+  if (pendingList && pendingWrap && pendingBtn) {
+    let expandedPending = false;
 
-  let expanded = false;
-
-  function hasOverflow(el){
-    return el.scrollHeight > el.clientHeight + 1;
-  }
-
-  function syncButtonVisibility(){
-    list.classList.remove("is-expanded");
-    const overflowWhenCollapsed = hasOverflow(list);
-
-    if (!overflowWhenCollapsed){
-      wrap.style.display = "none";
-      list.classList.add("is-expanded");
-      expanded = true;
-      return;
+    function hasOverflow(el){
+      return el.scrollHeight > el.clientHeight + 1;
     }
 
-    wrap.style.display = "flex";
-    expanded = false;
-    list.classList.remove("is-expanded");
-    btn.textContent = "Show More";
-  }
+    function syncPendingButtonVisibility(){
+      pendingList.classList.remove("is-expanded");
+      const overflowWhenCollapsed = hasOverflow(pendingList);
 
-  function toggle(){
-    expanded = !expanded;
-    if (expanded){
-      list.classList.add("is-expanded");
-      btn.textContent = "Show Less";
-    } else {
-      list.classList.remove("is-expanded");
-      btn.textContent = "Show More";
-      list.scrollIntoView({ block: "nearest", behavior: "smooth" });
+      if (!overflowWhenCollapsed){
+        pendingWrap.style.display = "none";
+        pendingList.classList.add("is-expanded");
+        expandedPending = true;
+        return;
+      }
+
+      pendingWrap.style.display = "flex";
+      expandedPending = false;
+      pendingList.classList.remove("is-expanded");
+      pendingBtn.textContent = "Show More";
     }
+
+    function togglePending(){
+      expandedPending = !expandedPending;
+      if (expandedPending){
+        pendingList.classList.add("is-expanded");
+        pendingBtn.textContent = "Show Less";
+      } else {
+        pendingList.classList.remove("is-expanded");
+        pendingBtn.textContent = "Show More";
+        pendingList.scrollIntoView({ block: "nearest", behavior: "smooth" });
+      }
+    }
+
+    syncPendingButtonVisibility();
+    window.addEventListener("resize", () => { syncPendingButtonVisibility(); });
+    pendingBtn.addEventListener("click", togglePending);
   }
 
-  syncButtonVisibility();
-  window.addEventListener("resize", () => { syncButtonVisibility(); });
-  btn.addEventListener("click", toggle);
+  /* ============================
+     Completed Studies Show More
+  ============================ */
+  const completedList = document.getElementById("completedList");
+  const completedWrap = document.getElementById("completedShowMoreWrap");
+  const completedBtn  = document.getElementById("completedShowMoreBtn");
+
+  if (completedList && completedWrap && completedBtn) {
+    let expandedCompleted = false;
+
+    function hasOverflow(el){
+      return el.scrollHeight > el.clientHeight + 1;
+    }
+
+    function syncCompletedButtonVisibility(){
+      completedList.classList.remove("is-expanded");
+      const overflowWhenCollapsed = hasOverflow(completedList);
+
+      if (!overflowWhenCollapsed){
+        completedWrap.style.display = "none";
+        completedList.classList.add("is-expanded");
+        expandedCompleted = true;
+        return;
+      }
+
+      completedWrap.style.display = "flex";
+      expandedCompleted = false;
+      completedList.classList.remove("is-expanded");
+      completedBtn.textContent = "Show More";
+    }
+
+    function toggleCompleted(){
+      expandedCompleted = !expandedCompleted;
+      if (expandedCompleted){
+        completedList.classList.add("is-expanded");
+        completedBtn.textContent = "Show Less";
+      } else {
+        completedList.classList.remove("is-expanded");
+        completedBtn.textContent = "Show More";
+        completedList.scrollIntoView({ block: "nearest", behavior: "smooth" });
+      }
+    }
+
+    syncCompletedButtonVisibility();
+    window.addEventListener("resize", () => { syncCompletedButtonVisibility(); });
+    completedBtn.addEventListener("click", toggleCompleted);
+  }
 })();
 </script>
 

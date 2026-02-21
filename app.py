@@ -472,6 +472,13 @@ def create_app():
             else:
                 completed_studies.append(s)
 
+        # ✅ FIX: show a single "awaiting admin review" list that matches the HOME count logic
+        awaiting_admin_review = sorted(
+            (pending_review + premium_pending),
+            key=lambda x: (x.created_at or datetime.min),
+            reverse=True,
+        )
+
         # premium requests (for UI messaging)
         if is_admin(u):
             premium_reqs = PremiumRequest.query.filter_by(property_id=prop.id).order_by(PremiumRequest.created_at.desc()).all()
@@ -483,10 +490,10 @@ def create_app():
             prop=prop,
             completed_studies=completed_studies,
             draft_studies=draft_studies,
-            pending_review=pending_review,
+            pending_review=awaiting_admin_review,  # ✅ now includes Premium pending too
             premium_pending=premium_pending,
             premium_reqs=premium_reqs,
-            is_admin=is_admin(u),  # IMPORTANT: template needs this for Admin tools
+            is_admin=is_admin(u),
             tier_prices={
                 "essentials": _pretty_money(_tier_price_cents("essentials")),
                 "plus": _pretty_money(_tier_price_cents("plus")),
@@ -593,7 +600,6 @@ def create_app():
             tier=tier,
             is_locked=False,
             tier_price=_pretty_money(_tier_price_cents(tier)),
-            # New: templates can use this to decide whether to show approve controls
             admin_can_approve=False,
             admin_approve_url=None,
         )
@@ -658,7 +664,6 @@ def create_app():
         ws = (study.workflow_status or "").lower()
         tier = (study.tier or "essentials").lower()
 
-        # New: if admin editing a paid Plus/Premium that isn't approved, allow "Complete & Approve"
         admin_can_approve = bool(
             is_admin(u)
             and tier in ("plus", "premium")
@@ -1448,10 +1453,8 @@ def create_app():
         tier = (study.tier or "").lower()
         ws = (study.workflow_status or "").lower()
 
-        # Always load submitted inputs for snapshot views (Plus/Premium pending)
         components, comp_photos = _load_components_and_photos(study_id)
 
-        # PLUS: customers see pending-only until approved (and see their submitted inputs below)
         if tier == "plus" and (not is_admin(u)) and ws != "approved_final":
             return render_template(
                 "study_pending_review.html",
@@ -1462,7 +1465,6 @@ def create_app():
                 pending_body="Your Plus request has been submitted. Our expert is reviewing it now. You’ll see the final report here once it’s approved.",
             )
 
-        # PREMIUM: customers see pending-only until approved
         if tier == "premium" and (not is_admin(u)) and ws != "approved_final":
             return render_template(
                 "study_premium_pending.html",
@@ -1475,7 +1477,6 @@ def create_app():
 
         results = ReserveYearResult.query.filter_by(study_id=study_id).order_by(ReserveYearResult.year.asc()).all()
 
-        # New: admin CTA availability (templates can show a "Complete & Approve" button)
         admin_can_approve = bool(
             is_admin(u)
             and tier in ("plus", "premium")
