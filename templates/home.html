@@ -42,122 +42,9 @@
     background: var(--bg);
   }
 
-  /* Top header */
-  .dash-topbar{
-    width: 100%;
-    height: 112px;
-    background: var(--ice);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0 56px;
-    box-sizing: border-box;
-  }
-
-  .dash-brand{
-    display:flex;
-    align-items:center;
-    gap: 18px;
-  }
-
-  .dash-logo{
-    width: 321px;
-    height: auto;
-    display:block;
-  }
-
-  .dash-actions{
-    display:flex;
-    align-items:center;
-    gap: 16px;
-    font-family: "Montserrat", sans-serif;
-    color: var(--navy);
-    white-space: nowrap;
-  }
-
-  /* Make MY ACCOUNT and SIGN OUT same font/size/weight */
-  .dash-actions .myacct{
-    font-family: "Montserrat", sans-serif;
-    font-size: 16px;
-    font-weight: 400;
-    line-height: 26px;
-    letter-spacing: 0.02em;
-    text-transform: uppercase;
-    color: var(--navy);
-    opacity: 0.95;
-    margin-right: 10px;
-  }
-
-  .dash-actions .signout{
-    font-family: "Montserrat", sans-serif;
-    font-size: 16px;
-    font-weight: 400;
-    line-height: 26px;
-    text-transform: uppercase;
-
-    display:inline-flex;
-    align-items:center;
-    justify-content:center;
-
-    height: 36px;
-    padding: 0 22px;
-    border-radius: var(--btnRadius);
-    border: 1px solid var(--sky);
-    color: var(--navy);
-    text-decoration: none;
-    background: transparent;
-  }
-
-  .dash-actions .signout:hover{ filter: brightness(0.98); }
-  .dash-actions .signout:active{ transform: translateY(1px); }
-
-  /* Admin flag (only show for admins) */
-  .admin-pill{
-    font-family: "Montserrat", sans-serif;
-    font-size: 12px;
-    font-weight: 600;
-    line-height: 18px;
-    letter-spacing: 0.02em;
-    text-transform: uppercase;
-
-    display:inline-flex;
-    align-items:center;
-    justify-content:center;
-
-    height: 24px;
-    padding: 0 10px;
-    border-radius: 999px;
-
-    background: rgba(44, 182, 255, 0.18);
-    border: 1px solid rgba(44, 182, 255, 0.45);
-    color: var(--navy);
-    margin-right: 6px;
-  }
-
-  /* Announcement bar */
-  .dash-announcement{
-    width: 100%;
-    min-height: 49px;
-    background: var(--navy);
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    padding: 10px 18px;
-    box-sizing: border-box;
-  }
-
-  .dash-announcement .msg{
-    font-family: "Montserrat", sans-serif;
-    font-size: 16px;
-    line-height: 26px;
-    color: #ffffff;
-    text-align:center;
-    max-width: 1200px;
-  }
-
   .dash-content{
     width: 100%;
-    padding: 40px 56px 70px;
+    padding: 70px 56px 70px; /* extra top padding since header/banner are removed */
     box-sizing: border-box;
   }
 
@@ -216,8 +103,8 @@
     border-radius: var(--inputRadius);
     border: 1px solid var(--borderDark25) !important;
 
-    background: #ffffff !important;   /* <-- kills black */
-    color: var(--navy) !important;     /* <-- kills white/gray text */
+    background: #ffffff !important;
+    color: var(--navy) !important;
 
     padding: 10px 14px;
     box-sizing: border-box;
@@ -403,52 +290,15 @@
       margin: 0 auto;
     }
     .card{ width: 100%; }
-    .dash-topbar{ padding: 0 22px; }
-    .dash-content{ padding: 30px 22px 60px; }
-    .dash-logo{ width: 260px; }
+    .dash-content{ padding: 60px 22px 60px; }
   }
 
   @media (max-width: 520px){
-    .dash-actions .myacct{ font-size: 14px; }
-    .dash-actions .signout{ font-size: 14px; }
+    /* nothing specific needed now */
   }
 </style>
 
 <div class="dash">
-
-  <!-- Light top bar -->
-  <div class="dash-topbar">
-    <div class="dash-brand">
-      <img
-        class="dash-logo"
-        src="{{ url_for('static', filename='Rapid Reserve Homepage_img/Rapid Reserve Study logo 1.png') }}"
-        alt="Rapid Reserve Study"
-      />
-    </div>
-
-    <div class="dash-actions">
-      {% if current_user and current_user.is_admin %}
-        <span class="admin-pill">ADMIN</span>
-      {% endif %}
-
-      <div class="myacct">MY ACCOUNT</div>
-      <a class="signout" href="{{ url_for('logout') }}">SIGN OUT</a>
-    </div>
-  </div>
-
-  <!-- Dark announcement bar (uses flashed messages if present) -->
-  <div class="dash-announcement">
-    <div class="msg">
-      {% with messages = get_flashed_messages() %}
-        {% if messages %}
-          {{ messages[-1] }}
-        {% else %}
-          &nbsp;
-        {% endif %}
-      {% endwith %}
-    </div>
-  </div>
-
   <div class="dash-content">
     <div class="dash-grid">
 
@@ -522,7 +372,6 @@
                     data-needs-review="{{ '1' if row.needs_review else '0' }}">
 
                   <td>{{ p.name }}</td>
-
                   <td>{{ loc if loc.strip() else "—" }}</td>
 
                   {% if current_user and current_user.is_admin %}
@@ -610,7 +459,6 @@
     const q = (search.value || "").trim().toLowerCase();
     if (q) return;
 
-    // compute current filtered length
     const filtered = rows.filter(r => {
       const name = r.dataset.name || "";
       const loc = r.dataset.loc || "";
